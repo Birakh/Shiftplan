@@ -58,7 +58,19 @@
         .tgt-input { width: 30px; font-size: 11px; padding: 2px; text-align: center; border: 1px solid #aaa; border-radius: 3px; background: #fffbcc; font-weight: bold; }
         .tgt-panel-input { width: 35px; text-align: center; font-weight: bold; margin-right: 5px; }
 
-        /* ── Select Mode ── */
+        /* ── Lock / Edit Mode ── */
+        .app-locked .edit-only { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
+        .app-locked .shift-select { pointer-events:none; background:#f0f0f0 !important; color:#888 !important; }
+        .app-locked .tgt-input   { pointer-events:none; background:#f0f0f0 !important; }
+        .app-locked .comment-input { } /* comments always free */
+        .app-locked input[type="checkbox"].edit-chk { pointer-events:none; opacity:0.35; }
+        #lockBtn { position:fixed; top:10px; right:14px; z-index:500; padding:5px 12px;
+            font-size:13px; font-weight:bold; border:none; border-radius:20px; cursor:pointer;
+            box-shadow:0 2px 6px rgba(0,0,0,0.25); transition:background 0.2s; }
+        #lockBtn.locked   { background:#c0392b; color:white; }
+        #lockBtn.unlocked { background:#27ae60; color:white; }
+        .lock-overlay { display:none; position:absolute; inset:0; z-index:2; cursor:not-allowed; border-radius:4px; }
+        .app-locked .lock-overlay { display:block; }
         .select-mode-active .shift-select { pointer-events: none; }
         .select-mode-active td[data-cell] { cursor: crosshair !important; }
         td.selected-cell { outline: 3px solid #e67e22 !important; outline-offset: -2px; background-color: rgba(230,126,34,0.15) !important; }
@@ -101,6 +113,9 @@
 
 <h1 id="pageTitle" class="no-print" style="display:inline-block; margin-right:16px;">Shift Planner (Forever Memory Enabled ⏳💾)</h1>
 <button id="langToggleBtn" onclick="toggleLang()" style="padding:4px 12px; font-size:12px; font-weight:bold; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; vertical-align:middle; margin-bottom:6px;">🌐 Deutsch</button>
+<div id="lockBadge" style="display:inline-block; margin-left:10px; font-size:11px; vertical-align:middle; padding:3px 10px; border-radius:12px; background:#ffecec; color:#c0392b; font-weight:bold;">🔒 View Mode</div>
+<!-- Fixed lock/unlock button top-right -->
+<button id="lockBtn" class="locked" onclick="toggleLock()">🔒 Locked</button>
 
 <div class="container no-print">
 
@@ -124,20 +139,20 @@
             <input type="hidden" id="monthPicker">
         </div>
 
-        <div class="form-group" style="background:#f9f9f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
+        <div class="form-group edit-only" style="background:#f9f9f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
             <strong id="targetsTitle">Master Granular Targets</strong><br>
             <small id="wdLabel">Weekday Defaults:</small><br>
             8E: <input type="number" id="mstWd8E" class="tgt-panel-input" value="4" onchange="saveMasterTargets()">
             8M: <input type="number" id="mstWd8M" class="tgt-panel-input" value="2" onchange="saveMasterTargets()">
             8L: <input type="number" id="mstWd8L" class="tgt-panel-input" value="4" onchange="saveMasterTargets()">
             <span id="wd13wrap">13H:<input type="number" id="mstWd13" class="tgt-panel-input" value="2" onchange="saveMasterTargets()"></span>
-            6H: <input type="number" id="mstWd6"  class="tgt-panel-input" value="1" onchange="saveMasterTargets()"><br>
+            <span id="wd6wrap">6H: <input type="number" id="mstWd6"  class="tgt-panel-input" value="1" onchange="saveMasterTargets()"></span><br>
             <small id="weLabel" style="display:inline-block; margin-top:5px;">Weekend/Holiday Defaults:</small><br>
             8E: <input type="number" id="mstWe8E" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
             8M: <input type="number" id="mstWe8M" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
             8L: <input type="number" id="mstWe8L" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
             <span id="we13wrap">13H:<input type="number" id="mstWe13" class="tgt-panel-input" value="0" onchange="saveMasterTargets()"></span>
-            6H: <input type="number" id="mstWe6"  class="tgt-panel-input" value="0" onchange="saveMasterTargets()"><br>
+            <span id="we6wrap">6H: <input type="number" id="mstWe6"  class="tgt-panel-input" value="0" onchange="saveMasterTargets()"></span><br>
             <div style="margin-top:6px; padding:6px; background:#e8f4fc; border-radius:3px; border:1px solid #aed6f1;">
                 <strong id="immoTgtTitle" style="color:#1a5276;">🏥 Immo Targets (Weekdays only)</strong>
                 <span id="immoTgtNote" style="font-size:10px; color:#555; display:block; margin-bottom:3px;">Warning-only — Auto-Fill never touches these. Use Jump-in workers to cover gaps.<br>Immo always 0 on weekends &amp; holidays.</span>
@@ -146,7 +161,7 @@
             </div>
         </div>
 
-        <div style="margin:6px 0 4px 0; padding:7px 9px; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:11px;">
+        <div class="edit-only" style="margin:6px 0 4px 0; padding:7px 9px; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:11px;">
             <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-weight:bold; color:#555;">
                 <input type="checkbox" id="toggle13H" onchange="toggle13HShift()">
                 <span id="toggle13Hlabel">Enable <span style="background:#ffe599; padding:1px 5px; border-radius:3px;">13H</span> shifts (07:00–20:00)</span>
@@ -162,10 +177,10 @@
             <span id="fairNote">⚖️ <strong>Fair 8L / 8M rotation:</strong> Auto-Fill uses a weekly late quota per worker — so every worker gets ~2–3 lates and ~2–3 earlies each week, and 8L (22:30) vs 8M (20:00) are kept balanced too.</span>
         </div>
 
-        <button id="btnAutoFill" class="btn-auto btn-full" onclick="autoGenerate()">✨ Smart Auto-Fill</button>
+        <button id="btnAutoFill" class="btn-auto btn-full edit-only" onclick="autoGenerate()">✨ Smart Auto-Fill</button>
         <div style="clear:both; overflow:hidden;">
-            <button class="btn-undo btn-half-l" id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
-            <button class="btn-redo btn-half-r" id="redoBtn" onclick="redo()" disabled>↪ Redo</button>
+            <button class="btn-undo btn-half-l edit-only" id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
+            <button class="btn-redo btn-half-r edit-only" id="redoBtn" onclick="redo()" disabled>↪ Redo</button>
         </div>
         <div style="clear:both; overflow:hidden;">
             <button id="btnAI"       class="btn-ai    btn-half-l" onclick="runAIAnalysis()">🤖 AI Analysis</button>
@@ -182,10 +197,12 @@
         </div>
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
         <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML (SharePoint)</button>
+        <button id="btnSPSync" style="background:#0078d4; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#006cbe'" onmouseout="this.style.background='#0078d4'" onclick="openSPModal()">☁️ SharePoint Sync</button>
+        <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
-            <button class="btn-select btn-half-l" id="selectModeBtn" onclick="toggleSelectMode()">⬜ Select Mode</button>
-            <button id="btnClear" class="btn-clear  btn-half-r" onclick="clearBoard()">🗑️ Clear Month</button>
+            <button class="btn-select btn-half-l edit-only" id="selectModeBtn" onclick="toggleSelectMode()">⬜ Select Mode</button>
+            <button id="btnClear" class="btn-clear btn-half-r edit-only" onclick="clearBoard()">🗑️ Clear Month</button>
         </div>
     </div>
 
@@ -239,7 +256,7 @@
             <strong>Immo Role:</strong><br>
             <span style="display:inline-block; margin-left:8px;">
                 <strong>Standard</strong> = regular ward worker, no Immo involvement.<br>
-                <strong>Fixed Immo</strong> = works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 08:00–16:30). System and Shift Preference fields are ignored.<br>
+                <strong>Fixed Immo</strong> = works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 07:30–16:00). System and Shift Preference fields are ignored.<br>
                 <strong>Immo Jump-in</strong> = normally a regular worker. Manually assign ImE/ImL in the table when Immo needs cover (sick, understaffed).
             </span>
 
@@ -260,7 +277,7 @@
             <select id="workerImmoPref" onchange="toggleImmoRatio()" style="margin-top:4px; font-weight:bold; width:100%;">
                 <option value="Mixed">Mixed — both ImE &amp; ImL during the week</option>
                 <option value="ImE">ImE Only — always 07:00–15:30</option>
-                <option value="ImL">ImL Only — always 08:00–16:30</option>
+                <option value="ImL">ImL Only — always 07:30–16:00</option>
             </select>
             <!-- Ratio row: only shown for Mixed -->
             <div id="rowImmoRatio" style="margin-top:6px;">
@@ -304,8 +321,8 @@
                 <label><input type="checkbox" value="0"><span class="dow_su">Su</span></label>
             </div>
         </div>
-        <button id="btnAddWorker" onclick="addWorkerFromForm()">+ Add Worker</button>
-        <button id="btnClearAll" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
+        <button id="btnAddWorker" class="edit-only" onclick="addWorkerFromForm()">+ Add Worker</button>
+        <button id="btnClearAll" class="edit-only" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
     </div>
 
     <!-- ═══ PANEL 3: Legend ═══ -->
@@ -313,7 +330,7 @@
         <h2 id="p3title">Legend & Limits</h2>
         <ul style="column-count:2; margin-top:0; font-size:11px;">
             <li><span style="background:#a2c4c9; padding:1px 4px;">ImE</span> Immo 07:00–15:30</li>
-            <li><span style="background:#76a5af; padding:1px 4px;">ImL</span> Immo 08:00–16:30</li>
+            <li><span style="background:#76a5af; padding:1px 4px;">ImL</span> Immo 07:30–16:00</li>
             <li><span style="background:#ffe599; padding:1px 4px;">13H</span> 07:00–20:00 ⚙️</li>
             <li><span style="background:#cfe2f3; padding:1px 4px;">8E</span>  07:00–15:30</li>
             <li><span style="background:#f4cccc; padding:1px 4px;">8L</span>  14:00–22:30 🔴 IR2</li>
@@ -339,16 +356,16 @@
         <div style="margin-top:8px; padding:10px; background:#fffbcc; border:1px solid #e1d670; border-radius:4px;">
             <p style="font-size:12px; margin:0 0 5px 0;">
                 <strong id="lbl_maxvac">Max Vacation per day:</strong>
-                <input type="number" id="maxVacation" value="2" style="width:40px;" onchange="refreshBoard()">
+                <input type="number" id="maxVacation" class="edit-chk" value="2" style="width:40px;" onchange="refreshBoard()">
                 <br><span id="lbl_vacnote" style="font-size:10px; color:#555;">Yellow = 1 spot left &nbsp;|&nbsp; Red = Full</span>
             </p>
             <p style="font-size:12px; margin:0 0 5px 0;">
                 <strong id="lbl_maxcon">Max Consecutive Days:</strong>
-                <input type="number" id="maxConsecutive" value="5" style="width:40px;" onchange="refreshBoard()">
+                <input type="number" id="maxConsecutive" class="edit-chk" value="5" style="width:40px;" onchange="refreshBoard()">
             </p>
             <p style="font-size:12px; margin:0 0 5px 0;">
                 <strong id="lbl_minstaf">Min Working Staff / day:</strong>
-                <input type="number" id="minStaff" value="0" style="width:40px;" onchange="refreshBoard()">
+                <input type="number" id="minStaff" class="edit-chk" value="0" style="width:40px;" onchange="refreshBoard()">
                 <br><span id="lbl_minstafnote" style="font-size:10px; color:#555;">0 = disabled &nbsp;|&nbsp; Date cell turns <span style="background:#ff6b6b; color:white; padding:0 3px;">red</span> if below</span>
             </p>
             <p id="lbl_shortcuts" style="font-size:11px; margin:0; color:#555;">
@@ -453,7 +470,7 @@
                 <select id="editImmoPref" onchange="editToggleImmoRatio()" style="margin-top:4px; font-weight:bold; width:100%;">
                     <option value="Mixed">Mixed — both ImE &amp; ImL</option>
                     <option value="ImE">ImE Only — always 07:00–15:30</option>
-                    <option value="ImL">ImL Only — always 08:00–16:30</option>
+                    <option value="ImL">ImL Only — always 07:30–16:00</option>
                 </select>
                 <div id="editRowImmoRatio" style="margin-top:6px;">
                     <label style="display:flex; align-items:center; gap:8px;">
@@ -551,6 +568,116 @@
         <h2 id="helpTitle" style="color:#0056b3;">📖 A to Z User Guide — v4</h2>
         <div id="helpContent" style="line-height:1.6; font-size:13px;"></div>
 
+<!-- SharePoint Sync Modal -->
+<div id="spModal" class="modal">
+    <div class="modal-content" style="max-width:540px;">
+        <span class="close-btn" onclick="closeSPModal()">&times;</span>
+        <h2 style="color:#0078d4;">☁️ SharePoint Sync</h2>
+
+        <!-- Setup section -->
+        <div style="background:#f0f6ff; border:1px solid #c8dff8; border-radius:6px; padding:12px; margin-bottom:12px; font-size:12px;">
+            <strong style="font-size:13px;">⚙️ Connection Settings</strong>
+            <div style="margin-top:8px; display:grid; gap:7px;">
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">SharePoint Site URL</label>
+                    <input id="spSiteUrl" type="text" placeholder="https://company.sharepoint.com/sites/YourSite"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
+                    <small style="color:#666;">Your team site URL — everything up to and including /sites/SiteName</small>
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Library / Folder Path</label>
+                    <input id="spFolderPath" type="text" placeholder="Shared Documents"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
+                    <small style="color:#666;">Usually "Shared Documents". Include subfolders if needed: "Shared Documents/Dienstplan"</small>
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">File Name</label>
+                    <input id="spFileName" type="text" placeholder="shiftplanner_data.json"
+                        style="width:200px; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="spAutoSync"> Auto-sync on load &amp; save
+                    </label>
+                </div>
+            </div>
+            <button onclick="saveSPConfig()" style="margin-top:10px; background:#0078d4; color:white; border:none; padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Settings</button>
+            <button onclick="openSetPasswordModal()" style="margin-top:10px; margin-left:8px; background:#8e44ad; color:white; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔑 Change Password</button>
+        </div>
+
+        <!-- How it works -->
+        <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:10px; margin-bottom:12px; font-size:11px; line-height:1.6;">
+            <strong>📋 One-time setup in SharePoint:</strong><br>
+            1. Go to your SharePoint site → <strong>Documents</strong> library (or any library)<br>
+            2. That's it — no list creation needed. The planner saves a <code>.json</code> file directly into the library.<br>
+            3. Make sure all colleagues have <strong>Edit</strong> permission on the library.<br>
+            4. Everyone must open this HTML file while <strong>logged into SharePoint</strong> in the same browser.
+        </div>
+
+        <!-- Status -->
+        <div id="spModalStatus" style="display:none; padding:8px 10px; border-radius:4px; font-size:12px; margin-bottom:10px;"></div>
+
+        <!-- Action buttons -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="spPull()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull from SharePoint</button>
+            <button onclick="spPush()" style="flex:1; background:#107c10; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push to SharePoint</button>
+            <button onclick="spTestConnection()" style="background:#605e5c; color:white; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
+        </div>
+
+        <div style="margin-top:12px; padding:8px; background:#f8f8f8; border-radius:4px; font-size:11px; color:#555;">
+            <strong>Pull</strong> = download the shared version from SharePoint into your local session.<br>
+            <strong>Push</strong> = upload your current session to SharePoint so all colleagues see it.<br>
+            ⚠️ The last person to push wins — if two people push at the same time, the later one overwrites. Coordinate with your team, or use auto-sync with pull-before-push.
+        </div>
+    </div>
+</div>
+
+<!-- Unlock Modal -->
+<div id="unlockModal" class="modal">
+    <div class="modal-content" style="max-width:360px;">
+        <span class="close-btn" onclick="document.getElementById('unlockModal').style.display='none'">&times;</span>
+        <h2 style="color:#c0392b;">🔒 Enter Password to Edit</h2>
+        <p style="font-size:13px; color:#555; margin-bottom:12px;">Enter the editor password to unlock shift editing, Auto-Fill, and settings.</p>
+        <input type="password" id="unlockInput" placeholder="Password" autocomplete="off"
+            style="width:100%; box-sizing:border-box; padding:9px; font-size:15px; border:2px solid #ddd; border-radius:6px; margin-bottom:8px;"
+            onkeydown="if(event.key==='Enter') attemptUnlock()">
+        <div id="unlockError" style="display:none; color:#c0392b; font-size:12px; margin-bottom:8px;">❌ Incorrect password. Try again.</div>
+        <div style="display:flex; gap:8px;">
+            <button onclick="attemptUnlock()" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:5px; font-size:14px; font-weight:bold; cursor:pointer;">🔓 Unlock</button>
+            <button onclick="document.getElementById('unlockModal').style.display='none'" style="background:#95a5a6; color:white; border:none; padding:10px 16px; border-radius:5px; cursor:pointer;">Cancel</button>
+        </div>
+        <p style="font-size:11px; color:#aaa; margin-top:10px; text-align:center;">No password set yet? <a href="#" onclick="openSetPasswordModal();return false;" style="color:#0078d4;">Set one now</a></p>
+    </div>
+</div>
+
+<!-- Set / Change Password Modal -->
+<div id="setPasswordModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+        <span class="close-btn" onclick="document.getElementById('setPasswordModal').style.display='none'">&times;</span>
+        <h2 style="color:#0078d4;" id="setPwTitle">🔑 Set Editor Password</h2>
+        <p id="setPwDesc" style="font-size:12px; color:#555; margin-bottom:12px;">This password protects shift editing. Colleagues without it can still view the schedule and leave comments.</p>
+        <div style="display:grid; gap:8px; margin-bottom:12px;">
+            <div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">New Password</label>
+                <input type="password" id="pw1" placeholder="Choose a password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:8px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Confirm Password</label>
+                <input type="password" id="pw2" placeholder="Repeat password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:8px; font-size:13px; border:1px solid #ccc; border-radius:4px;"
+                    onkeydown="if(event.key==='Enter') saveNewPassword()">
+            </div>
+        </div>
+        <div id="setPwError" style="display:none; color:#c0392b; font-size:12px; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:8px;">
+            <button onclick="saveNewPassword()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:5px; font-size:13px; font-weight:bold; cursor:pointer;">💾 Save Password to SharePoint</button>
+            <button onclick="document.getElementById('setPasswordModal').style.display='none'" style="background:#95a5a6; color:white; border:none; padding:10px 14px; border-radius:5px; cursor:pointer;">Cancel</button>
+        </div>
+        <p style="font-size:11px; color:#aaa; margin-top:10px;">The password hash is saved to <code>shiftplanner_config.json</code> on SharePoint. You must have SharePoint configured first.</p>
+    </div>
+</div>
+
 <!-- LSS Day Modal -->
 <div id="lssModal" class="modal">
     <div class="modal-content" style="max-width:460px;">
@@ -612,6 +739,14 @@ let use13H = false;  // toggled via "Enable 13H" checkbox in Setup panel
 let use6H  = false;  // toggled via "Enable 6H"  checkbox in Setup panel
 let currentLang = 'en'; // 'en' or 'de'
 
+// SharePoint sync config (stored separately in localStorage, not per-month)
+let spConfig = { siteUrl:'', folderPath:'Shared Documents', fileName:'shiftplanner_data.json', autoSync:false };
+
+// ── Edit-mode lock ──
+let isEditMode = false;   // false = view/comment only, true = full edit
+let pwHash     = null;    // SHA-256 hex of the password, loaded from SharePoint config
+let spCfgFile  = 'shiftplanner_config.json'; // config file name on SharePoint
+
 // Select-mode state
 let selectMode    = false;
 let selectedCells = new Set();   // "wIndex_dIndex"
@@ -649,6 +784,7 @@ function applySnapshot(snap) {
 }
 
 function undo() {
+    if (!requireEdit("Undo")) return;
     if (undoStack.length === 0) return;
     redoStack.push(snapshotState());
     applySnapshot(undoStack.pop());
@@ -657,6 +793,7 @@ function undo() {
 }
 
 function redo() {
+    if (!requireEdit("Redo")) return;
     if (redoStack.length === 0) return;
     undoStack.push(snapshotState());
     applySnapshot(redoStack.pop());
@@ -667,7 +804,7 @@ function redo() {
 const shiftHours = {
     "-":0,"13H":13,"8E":8,"8L":8,"8M":8,"6H":6,"OFF":0,"VAC":8,"SICK":8,"FB":8,
     "DF":0,"Urlaub IR":8,"Urlaub-ZA":8,"U-Immo":8,"LSS":8,"Offc":8,
-    "RB1":0,"RB2":0,"ImE":8,"ImL":8,"8H-ANY":8,"8L-ANY":8
+    "RB1":0,"RB2":0,"ImE":8,"ImL":8.5,"8H-ANY":8,"8L-ANY":8
 };
 const workShifts    = ["13H","8E","8L","8M","6H","FB","LSS","Offc","ImE","ImL","CUS"];
 const morningShifts = ["13H","8E","6H","Offc","FB","ImE","ImL"];
@@ -792,7 +929,13 @@ function getHolidayName(dIndex) {
 // ─────────────────────────────────────────────────────────
 window.onload = () => {
     allMonthsData = JSON.parse(localStorage.getItem('shiftPlannerAllMonthsV23')) || {};
-    // v4→v5 migration: force use13H/use6H to false in all saved months
+
+    // Load SharePoint config
+    const savedSPCfg = localStorage.getItem('shiftPlannerSPConfig');
+    if (savedSPCfg) { try { spConfig = { ...spConfig, ...JSON.parse(savedSPCfg) }; } catch(e){} }
+    // Apply initial lock state (always start locked)
+    applyLockState();
+
     // (old versions defaulted them to true; new default is false)
     if (!localStorage.getItem('shiftPlannerV5migrated')) {
         Object.keys(allMonthsData).forEach(k => {
@@ -852,6 +995,30 @@ window.onload = () => {
     changeMonth(true);
     if (currentLang === 'de') applyLang();
     updateFieldGuide();
+
+    // Restore SP status bar if configured
+    if (spConfig.siteUrl) {
+        const lastSync = localStorage.getItem('shiftPlannerSPLastSync');
+        spSetStatus(`☁️ SP configured${lastSync ? ' · Last sync: ' + lastSync : ' · Not yet synced'}`, '#e6f3ff', '#0078d4');
+        // Load password hash from SharePoint config file
+        spLoadConfig();
+        if (spConfig.autoSync) {
+            setTimeout(() => spPull(true), 800); // silent auto-pull on load
+        }
+    }
+
+    // Apply initial dim state for toggles (state is set by loadMonthData, but DOM
+    // opacity needs one final pass after the page is fully rendered)
+    requestAnimationFrame(() => {
+        ['wd13wrap','we13wrap'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.opacity = use13H ? '1' : '0.35';
+        });
+        ['wd6wrap','we6wrap'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.opacity = use6H ? '1' : '0.35';
+        });
+    });
 };
 
 // ─────────────────────────────────────────────────────────
@@ -911,6 +1078,10 @@ function loadMonthData(monthKey) {
             use6H = saved.use6H;
             const chk6 = document.getElementById('toggle6H');
             if (chk6) chk6.checked = use6H;
+            ['wd6wrap','we6wrap'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.opacity = use6H ? '1' : '0.35';
+            });
         }
         if (saved.currentLang) {
             currentLang = saved.currentLang;
@@ -932,6 +1103,10 @@ function loadMonthData(monthKey) {
         if (chk13) chk13.checked = false;
         if (chk6)  chk6.checked  = false;
         ['wd13wrap','we13wrap'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.opacity = '0.35';
+        });
+        ['wd6wrap','we6wrap'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.opacity = '0.35';
         });
@@ -961,6 +1136,7 @@ function loadTestWorkers() {
 }
 
 function toggle13HShift() {
+    if (!requireEdit("Toggle 13H")) { const chk=document.getElementById("toggle13H"); if(chk) chk.checked=use13H; return; }
     use13H = document.getElementById('toggle13H').checked;
     ['wd13wrap','we13wrap'].forEach(id => {
         const el = document.getElementById(id);
@@ -970,11 +1146,17 @@ function toggle13HShift() {
 }
 
 function toggle6HShift() {
+    if (!requireEdit("Toggle 6H")) { const chk=document.getElementById("toggle6H"); if(chk) chk.checked=use6H; return; }
     use6H = document.getElementById('toggle6H').checked;
+    ['wd6wrap','we6wrap'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.opacity = use6H ? '1' : '0.35';
+    });
     saveData(); renderTable();
 }
 
 function saveMasterTargets() {
+    if (!requireEdit("Change Targets")) return;
     const map = { mstWd8E:'wd8E', mstWd8M:'wd8M', mstWd8L:'wd8L', mstWd13:'wd13', mstWd6:'wd6',
                   mstWe8E:'we8E', mstWe8M:'we8M', mstWe8L:'we8L', mstWe13:'we13', mstWe6:'we6',
                   mstWdImE:'wdImE', mstWdImL:'wdImL' };
@@ -994,6 +1176,8 @@ function saveData() {
         masterTargets, monthValue:currentMonthKey, maxVac, maxConsec, minStaff, use13H, use6H, currentLang
     };
     localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+    // Auto-push to SharePoint if configured
+    if (spConfig.autoSync && spConfig.siteUrl) spPush(true);
 }
 
 function populateYearDropdown() {
@@ -1067,6 +1251,7 @@ function getPrevMonthLastDays(workerName, numDays) {
 }
 
 function updateDailyTarget(dIndex, type, value) {
+    if (!requireEdit("Change Daily Target")) return;
     dailyTargets[dIndex][type] = parseInt(value) || 0;
     saveData(); renderTable();
 }
@@ -1097,6 +1282,7 @@ function updateImmoRatioLabel() {
 }
 
 function addWorkerFromForm() {
+    if (!requireEdit("Add Worker")) return;
     const name = document.getElementById('workerName').value.toUpperCase();
     if (!name) return alert('Please enter a worker name.');
     const fixedOff = [];
@@ -1130,10 +1316,12 @@ function addWorkerFromForm() {
 }
 
 function deleteWorker(index) {
+    if (!requireEdit("Delete Worker")) return;
     if (confirm(`Remove ${workers[index].name}?`)) { workers.splice(index,1); saveData(); renderTable(); }
 }
 
 function clearAllWorkers() {
+    if (!requireEdit("Clear All Workers")) return;
     if (workers.length === 0) return alert('No workers to remove.');
     if (!confirm(`Remove all ${workers.length} workers and clear all shifts for this month?\nThis cannot be undone.`)) return;
     workers = [];
@@ -1148,6 +1336,7 @@ function clearAllWorkers() {
 let editingWorkerIndex = null;
 
 function openEditModal(index) {
+    if (!requireEdit("Edit Worker")) return;
     editingWorkerIndex = index;
     const w = workers[index];
 
@@ -1227,7 +1416,16 @@ function saveEditWorker() {
 //  Update Daily Target (inline inputs in table)
 // ─────────────────────────────────────────────────────────
 
-function updateShift(wIndex, dIndex, value) { pushUndo(); workers[wIndex].shifts[dIndex]=value; saveData(); renderTable(); }
+function updateShift(wIndex, dIndex, value) {
+    if (!isEditMode) {
+        // Revert the dropdown to the actual current value
+        const sel = document.querySelector(`.shift-select[data-w="${wIndex}"][data-d="${dIndex}"]`);
+        if (sel) sel.value = workers[wIndex].shifts[dIndex];
+        requireEdit('Edit Shift');
+        return;
+    }
+    pushUndo(); workers[wIndex].shifts[dIndex]=value; saveData(); renderTable();
+}
 function updateRequest(wIndex, dIndex, isChecked) { workers[wIndex].requests[dIndex]=isChecked; saveData(); renderTable(); }
 function updateComment(dIndex, text) { dailyComments[dIndex]=text; saveData(); }
 
@@ -1274,6 +1472,7 @@ function toggleLSS(dIndex) {
 }
 
 function applyLSSModal() {
+    if (!requireEdit("Apply LSS")) return;
     const d = lssModalDayIndex;
     if (d === null) return;
     pushUndo();
@@ -1296,6 +1495,7 @@ function applyLSSModal() {
 }
 
 function removeLSSModal() {
+    if (!requireEdit("Remove LSS")) return;
     const d = lssModalDayIndex;
     if (d === null) return;
     pushUndo();
@@ -1349,6 +1549,7 @@ function updateCusOverlapInfo() {
 }
 
 function applyCustomHours() {
+    if (!requireEdit("Custom Hours")) return;
     const wIndex = parseInt(document.getElementById('cusWorkerIdx').value);
     const dIndex = parseInt(document.getElementById('cusDayIdx').value);
     const s = document.getElementById('cusStartTime').value;
@@ -1370,6 +1571,7 @@ function closeCustomHoursModal() {
 //  Select Mode
 // ─────────────────────────────────────────────────────────
 function toggleSelectMode() {
+    if (!selectMode && !requireEdit("Select Mode")) return;
     selectMode = !selectMode;
     selectedCells.clear();
     const btn     = document.getElementById('selectModeBtn');
@@ -1407,6 +1609,7 @@ function handleCellClick(e, wIndex, dIndex) {
 }
 
 function applyBulkShift() {
+    if (!requireEdit("Bulk Fill")) return;
     if (selectedCells.size===0) return alert('No cells selected!');
     pushUndo();
     const shift = document.getElementById('bulkShiftSelect').value;
@@ -1613,10 +1816,10 @@ function renderTable() {
         <th style="background:#cce0e8;">ImL<br><small>(Act/Tgt)</small></th>
         <th style="background:#e8f4fc; color:#1a5276;" title="Total working staff this day">👥 Total<br><small>working</small></th>
         <th>IR2 (E|M|L)</th><th>IR3 (E|M|L)</th><th>IR4 (E|M|L)</th>
-        <th>Immo (07:00|08:00|U)</th>
+        <th>Immo (07:00|07:30|VAC|SICK)</th>
         <th style="min-width:150px;">Room Warnings</th>
-        <th>Sick</th>
-        <th class="no-print">Vac Count</th>
+        <th style="min-width:90px; color:#c0392b;">🤒 Sick</th>
+        <th style="min-width:90px; color:#8e44ad;">🏖 Vacation</th>
         <th>Daily Comments</th></tr>`;
     document.getElementById('tableHead').innerHTML = headHTML;
 
@@ -1635,9 +1838,10 @@ function renderTable() {
         bodyHTML += `<tr class="${rowClass}">__DATECELL_${d}__`;
 
         let c8E=0,c8M=0,c8L=0,c13H=0,c6H=0,cImE=0,cImL=0,vCount=0,sickCount=0,workingCount=0;
+        const sickNames=[], vacNames=[];
         const rooms = {
             IR2:{e:[],m:[],l:[]}, IR3:{e:[],m:[],l:[]},
-            IR4:{e:[],m:[],l:[]}, Immo:{e:[],l:[],u:[]}
+            IR4:{e:[],m:[],l:[]}, Immo:{e:[],l:[],u:[],vac:[],sick:[]}
         };
 
         workers.forEach((worker, wIndex) => {
@@ -1664,8 +1868,8 @@ function renderTable() {
             const isRestViol = ['8L','8M'].includes(prevBase) && morningShifts.includes(baseShift);
 
             // Counters
-            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(baseShift)) vCount++;
-            if (baseShift==='SICK') sickCount++;
+            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(baseShift)) { vCount++; vacNames.push(worker.name); }
+            if (baseShift==='SICK') { sickCount++; sickNames.push(worker.name); }
             if (baseShift==='8E')  c8E++;
             if (baseShift==='8M')  c8M++;
             if (baseShift==='8L')  c8L++;
@@ -1705,6 +1909,11 @@ function renderTable() {
                 if (['8E','6H','13H','ImE'].includes(baseShift)) rooms.Immo.e.push(nameChip);
                 if (['8L','8M','13H','ImL'].includes(baseShift)) rooms.Immo.l.push(nameChip);
                 if (baseShift==='U-Immo') rooms.Immo.u.push(nameChip);
+            }
+            // Also track VAC/SICK for Immo workers specifically (Fixed Immo or Jump-in)
+            if (worker.immo === 'Fixed' || worker.immo === 'Jump') {
+                if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(baseShift)) rooms.Immo.vac.push(nameChip);
+                if (baseShift === 'SICK') rooms.Immo.sick.push(nameChip);
             }
 
             const textCol  = isRestViol ? 'color:red;' : '';
@@ -1772,8 +1981,10 @@ function renderTable() {
         });
         const totImmo = rooms.Immo.e.length + rooms.Immo.l.length;
         if (totImmo>0&&(totImmo<2||totImmo>4)) warnings.push(`Immo Total: ${totImmo} staff`);
-        const uStr = rooms.Immo.u.length>0 ? `<br><strong>U:</strong> ${rooms.Immo.u.join(' ')}` : '';
-        roomCols += `<td class="room-box"><strong>07:00:</strong> ${rooms.Immo.e.join(' ')||'-'}<br><strong>08:00:</strong> ${rooms.Immo.l.join(' ')||'-'}${uStr}</td>`;
+        const uStr   = rooms.Immo.u.length>0    ? `<br><span style="color:#8e44ad;font-weight:bold;">U:</span> ${rooms.Immo.u.join(' ')}`    : '';
+        const vacStr = rooms.Immo.vac.length>0  ? `<br><span style="color:#8e44ad;font-weight:bold;">VAC:</span> ${rooms.Immo.vac.join(' ')}` : '';
+        const sickStr= rooms.Immo.sick.length>0 ? `<br><span style="color:#c0392b;font-weight:bold;">SICK:</span> ${rooms.Immo.sick.join(' ')}`  : '';
+        roomCols += `<td class="room-box"><strong>07:00:</strong> ${rooms.Immo.e.join(' ')||'-'}<br><strong>07:30:</strong> ${rooms.Immo.l.join(' ')||'-'}${uStr}${vacStr}${sickStr}</td>`;
 
         let warnHtml = warnings.length>0
             ? `<strong style="color:red; font-size:11px;">⚠️ ${warnings.join('<br>⚠️ ')}</strong>`
@@ -1789,8 +2000,12 @@ function renderTable() {
 
         bodyHTML += `${roomCols}
             <td style="text-align:left; vertical-align:middle;">${warnHtml}</td>
-            <td style="color:red; font-weight:bold; vertical-align:middle;">${sickCount>0?sickCount:''}</td>
-            <td class="no-print ${vacClass}" style="vertical-align:middle;">${vCount>0?vCount:''}</td>
+            <td style="vertical-align:top; font-size:11px; min-width:90px;">
+                ${sickNames.map(n=>`<span class="name-chip" style="background:#f5b7b1; display:block; margin-bottom:2px;">${n}</span>`).join('')}
+            </td>
+            <td class="${vacClass}" style="vertical-align:top; font-size:11px; min-width:90px;">
+                ${vacNames.map(n=>`<span class="name-chip" style="background:#d0a9f5; display:block; margin-bottom:2px;">${n}</span>`).join('')}
+            </td>
             <td style="vertical-align:middle;">
                 <input type="text" class="comment-input" placeholder="Type notes..."
                     value="${(dailyComments[d]||'').replace(/"/g,'&quot;')}"
@@ -1836,6 +2051,7 @@ function renderTable() {
 }
 
 function clearBoard() {
+    if (!requireEdit("Clear Month")) return;
     if (!confirm('Clear all shifts for this month?')) return;
     pushUndo();
     workers.forEach(w => w.shifts = Array(daysInMonth).fill('-'));
@@ -1852,6 +2068,7 @@ function getDayCount(dayIndex, type) {
 //  BUG-FIX #3 — 22h worker: auto-place 6H on Mondays + 2×8H
 // ─────────────────────────────────────────────────────────
 function autoGenerate() {
+    if (!requireEdit("Auto-Fill")) return;
     if (!confirm('Auto-fill balanced schedule based on your Daily Targets?\nPre-filled shifts (VAC, SICK, 6H, FB, etc.) will be kept.')) return;
     pushUndo();
 
@@ -2348,7 +2565,7 @@ function runAIAnalysis() {
         if (c8L<dailyTargets[d].t8L) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t8L} 8L, have ${c8L}`);
         if (use13H && c13<dailyTargets[d].t13) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t13} 13H, have ${c13}`);
         if (cImE<tgtImE) immoGaps.push(`Day ${d+1}: need ${tgtImE} ImE (07:00), have ${cImE} — assign a Jump-in`);
-        if (cImL<tgtImL) immoGaps.push(`Day ${d+1}: need ${tgtImL} ImL (08:00), have ${cImL} — assign a Jump-in`);
+        if (cImL<tgtImL) immoGaps.push(`Day ${d+1}: need ${tgtImL} ImL (07:30), have ${cImL} — assign a Jump-in`);
     }
     report += gaps.length>0
         ? `<ul style="color:red; font-size:12px;"><li>${gaps.join('</li><li>')}</li></ul>`
@@ -2537,13 +2754,14 @@ function copyColorfulExcel() {
     let html = "<table border='1' style='font-family:Arial,sans-serif; font-size:12px; border-collapse:collapse;'>";
     html += `<tr><th>Date</th><th>Holiday?</th><th>LSS?</th>`;
     workers.forEach(w => html += `<th>${w.name} (${w.contract}h)</th>`);
-    html += `<th>8E</th><th>8M</th><th>8L</th>${use13H?'<th>13H</th>':''}${use6H?'<th>6H</th>':''}<th>ImE</th><th>ImL</th><th>Total</th><th>Sick</th><th>Vac</th><th>Comments</th></tr>`;
+    html += `<th>8E</th><th>8M</th><th>8L</th>${use13H?'<th>13H</th>':''}${use6H?'<th>6H</th>':''}<th>ImE</th><th>ImL</th><th>Total</th><th>Sick (names)</th><th>Vacation (names)</th><th>Comments</th></tr>`;
 
     for (let d=0; d<daysInMonth; d++) {
         const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
         let row = `<tr><td>${dayNames[dow]} ${d+1}.${currentMonth}.</td>
             <td>${isHoliday(d)?'Y':'N'}</td><td>${lssDays.includes(d)?'Y':'N'}</td>`;
         let s8E=0,s8M=0,s8L=0,s13H=0,s6H=0,sImE=0,sImL=0,sWork=0,svac=0,ssick=0;
+        const exSickNames=[], exVacNames=[];
         workers.forEach(w => {
             const sh=w.shifts[d], b=getBaseShift(sh);
             const bgColor = getColor(sh);
@@ -2554,15 +2772,15 @@ function copyColorfulExcel() {
             if (b==='ImE') sImE++; if (b==='ImL') sImL++;
             if (b==='CUS') { const ov=cusOverlap(sh); if(ov.early) s8E++; if(ov.late) s8L++; }
             if (workShifts.includes(b)) sWork++;
-            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(b)) svac++;
-            if (b==='SICK') ssick++;
+            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(b)) { svac++; exVacNames.push(w.name); }
+            if (b==='SICK') { ssick++; exSickNames.push(w.name); }
         });
         row += `<td>${s8E}</td><td>${s8M}</td><td>${s8L}</td>` + (use13H?`<td>${s13H}</td>`:'') + (use6H?`<td>${s6H}</td>`:'') + `
             <td style="background:#dff0f8;">${sImE}</td>
             <td style="background:#cce0e8;">${sImL}</td>
             <td style="background:#e8f4fc; font-weight:bold;">${sWork}</td>
-            <td style="color:red; font-weight:bold;">${ssick>0?ssick:''}</td>
-            <td>${svac>0?svac:''}</td><td>${dailyComments[d]||''}</td></tr>`;
+            <td style="color:red;">${exSickNames.join(', ')||''}</td>
+            <td>${exVacNames.join(', ')||''}</td><td>${dailyComments[d]||''}</td></tr>`;
         html += row;
     }
 
@@ -2625,6 +2843,7 @@ const T = {
     btnRestore:     '📂 Restore JSON',
     btnExcel:       '📋 Copy for Excel',
     btnHTML:        '⬇️ Download as HTML (SharePoint)',
+    btnSPSync:      '☁️ SharePoint Sync',
     btnDiff:        '📆 Month Comparison',
     selectModeBtn:  '⬜ Select Mode',
     btnClear:       '🗑️ Clear Month',
@@ -2686,6 +2905,7 @@ const T = {
     btnRestore:     '📂 JSON wiederherstellen',
     btnExcel:       '📋 Für Excel kopieren',
     btnHTML:        '⬇️ Als HTML herunterladen (SharePoint)',
+    btnSPSync:      '☁️ SharePoint-Synchronisation',
     btnDiff:        '📆 Monatsvergleich',
     selectModeBtn:  '⬜ Auswahlmodus',
     btnClear:       '🗑️ Monat leeren',
@@ -2824,7 +3044,7 @@ function getFieldGuide(lang) {
 <strong>${de?'Immo-Rolle:':'Immo Role:'}</strong><br>
 <span style="display:inline-block; margin-left:8px;">
     <strong>${de?'Standard':'Standard'}</strong> = ${de?'Regulärer Stationsmitarbeiter, keine Immo-Beteiligung.':'Regular ward worker, no Immo involvement.'}<br>
-    <strong>${de?'Festes Immo':'Fixed Immo'}</strong> = ${de?'Arbeitet <em>nur</em> in der Immo (ImE 07:00–15:30 oder ImL 08:00–16:30). System und Dienstpräferenz werden ignoriert.':'Works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 08:00–16:30). System and Shift Preference are ignored.'}<br>
+    <strong>${de?'Festes Immo':'Fixed Immo'}</strong> = ${de?'Arbeitet <em>nur</em> in der Immo (ImE 07:00–15:30 oder ImL 07:30–16:00). System und Dienstpräferenz werden ignoriert.':'Works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 07:30–16:00). System and Shift Preference are ignored.'}<br>
     <strong>${de?'Immo-Einspringer':'Immo Jump-in'}</strong> = ${de?'Regulärer Mitarbeiter. ImE/ImL manuell in der Tabelle zuweisen, wenn Immo Abdeckung benötigt.':'Regular worker. Manually assign ImE/ImL in the table when Immo needs cover.'}
 </span>
 
@@ -2889,6 +3109,7 @@ function applyLang() {
     set('btnRestore',    t.btnRestore,   'text');
     set('btnExcel',      t.btnExcel,     'text');
     set('btnHTML',       t.btnHTML,      'text');
+    set('btnSPSync',     t.btnSPSync,    'text');
     set('btnDiff',       t.btnDiff,      'text');
     set('selectModeBtn', selectMode ? (currentLang==='de'?'✔ Auswahlmodus AN':'✔ Select Mode ON') : t.selectModeBtn, 'text');
     set('btnClear',      t.btnClear,     'text');
@@ -2945,6 +3166,312 @@ function applyLang() {
 
     // Translate field guide
     updateFieldGuide();
+}
+
+
+
+// ─────────────────────────────────────────────────────────
+//  Edit-Mode Lock / Unlock
+// ─────────────────────────────────────────────────────────
+
+async function sha256(str) {
+    const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function applyLockState() {
+    const body   = document.body;
+    const lockBtn = document.getElementById('lockBtn');
+    const badge   = document.getElementById('lockBadge');
+    if (isEditMode) {
+        body.classList.remove('app-locked');
+        if (lockBtn) { lockBtn.textContent = '🔓 Editing'; lockBtn.className = 'unlocked'; }
+        if (badge)   { badge.textContent = '🔓 Edit Mode'; badge.style.background='#eaffea'; badge.style.color='#27ae60'; }
+    } else {
+        body.classList.add('app-locked');
+        if (lockBtn) { lockBtn.textContent = '🔒 Locked'; lockBtn.className = 'locked'; }
+        if (badge)   { badge.textContent = '🔒 View Mode'; badge.style.background='#ffecec'; badge.style.color='#c0392b'; }
+    }
+}
+
+function toggleLock() {
+    if (isEditMode) {
+        // Lock
+        isEditMode = false;
+        applyLockState();
+    } else {
+        // Try to unlock
+        if (!pwHash) {
+            // No password set yet — offer to set one
+            if (confirm('No editor password is set yet.\n\nClick OK to set a password, or Cancel to enter edit mode without a password (not recommended for shared use).')) {
+                openSetPasswordModal();
+            } else {
+                isEditMode = true;
+                applyLockState();
+            }
+        } else {
+            document.getElementById('unlockInput').value = '';
+            document.getElementById('unlockError').style.display = 'none';
+            document.getElementById('unlockModal').style.display = 'block';
+            setTimeout(() => document.getElementById('unlockInput').focus(), 100);
+        }
+    }
+}
+
+async function attemptUnlock() {
+    const input = document.getElementById('unlockInput').value;
+    const hash  = await sha256(input);
+    if (hash === pwHash) {
+        isEditMode = true;
+        applyLockState();
+        document.getElementById('unlockModal').style.display = 'none';
+        document.getElementById('unlockInput').value = '';
+        document.getElementById('unlockError').style.display = 'none';
+    } else {
+        document.getElementById('unlockError').style.display = 'block';
+        document.getElementById('unlockInput').value = '';
+        document.getElementById('unlockInput').focus();
+    }
+}
+
+function requireEdit(actionName) {
+    if (isEditMode) return true;
+    alert(`🔒 "${actionName || 'This action'}" requires Edit Mode.\n\nClick the 🔒 Locked button (top-right) and enter the password.`);
+    return false;
+}
+
+function openSetPasswordModal() {
+    document.getElementById('pw1').value = '';
+    document.getElementById('pw2').value = '';
+    document.getElementById('setPwError').style.display = 'none';
+    const title = document.getElementById('setPwTitle');
+    const desc  = document.getElementById('setPwDesc');
+    if (title) title.textContent = pwHash ? '🔑 Change Editor Password' : '🔑 Set Editor Password';
+    document.getElementById('unlockModal').style.display = 'none';
+    document.getElementById('setPasswordModal').style.display = 'block';
+    setTimeout(() => document.getElementById('pw1').focus(), 100);
+}
+
+async function saveNewPassword() {
+    const p1 = document.getElementById('pw1').value;
+    const p2 = document.getElementById('pw2').value;
+    const err = document.getElementById('setPwError');
+    if (!p1) { err.textContent = '⚠️ Password cannot be empty.'; err.style.display='block'; return; }
+    if (p1 !== p2) { err.textContent = '⚠️ Passwords do not match.'; err.style.display='block'; return; }
+    if (p1.length < 4) { err.textContent = '⚠️ Password must be at least 4 characters.'; err.style.display='block'; return; }
+    if (!spConfig.siteUrl) {
+        err.textContent = '⚠️ SharePoint is not configured. Set up SharePoint sync first (☁️ button), then set the password.';
+        err.style.display = 'block';
+        return;
+    }
+    err.style.display = 'none';
+    const hash = await sha256(p1);
+    // Save to SharePoint config file
+    try {
+        const digest = await spGetDigest();
+        const payload = JSON.stringify({ pwHash: hash, version: 1 });
+        const folderRel = spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '') + '/' + spConfig.folderPath;
+        const uploadUrl = `${spConfig.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderRel}')/Files/Add(url='${spCfgFile}', overwrite=true)`;
+        const r = await fetch(uploadUrl, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Accept':'application/json;odata=verbose', 'X-RequestDigest':digest, 'Content-Type':'application/octet-stream' },
+            body: payload
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        pwHash = hash;
+        isEditMode = true;
+        applyLockState();
+        document.getElementById('setPasswordModal').style.display = 'none';
+        alert('✅ Password saved to SharePoint!\n\nYou are now in Edit Mode. Share the updated password with your team — they will need it to make shift changes.');
+    } catch(e) {
+        err.textContent = `❌ Failed to save: ${e.message}`;
+        err.style.display = 'block';
+    }
+}
+
+// Load password hash from SharePoint config file
+async function spLoadConfig() {
+    if (!spConfig.siteUrl) return;
+    try {
+        const folderRel = spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '') + '/' + spConfig.folderPath;
+        const fileUrl   = `${spConfig.siteUrl}/_api/web/GetFileByServerRelativeUrl('${folderRel}/${spCfgFile}')/$value`;
+        const r = await fetch(fileUrl, { credentials:'include', headers:{'Accept':'application/json'} });
+        if (r.status === 404) return; // no config yet — no password set
+        if (!r.ok) return;
+        const cfg = JSON.parse(await r.text());
+        if (cfg.pwHash) pwHash = cfg.pwHash;
+    } catch(e) { /* silent — config file may not exist yet */ }
+}
+
+// ─────────────────────────────────────────────────────────
+//  SharePoint Sync
+// ─────────────────────────────────────────────────────────
+
+function openSPModal() {
+    // Populate form with current config
+    document.getElementById('spSiteUrl').value    = spConfig.siteUrl    || '';
+    document.getElementById('spFolderPath').value = spConfig.folderPath || 'Shared Documents';
+    document.getElementById('spFileName').value   = spConfig.fileName   || 'shiftplanner_data.json';
+    document.getElementById('spAutoSync').checked = spConfig.autoSync   || false;
+    spHideStatus();
+    document.getElementById('spModal').style.display = 'block';
+}
+
+function closeSPModal() {
+    document.getElementById('spModal').style.display = 'none';
+}
+
+function saveSPConfig() {
+    if (!requireEdit("Change SharePoint Settings")) return;
+    spConfig = {
+        siteUrl:    document.getElementById('spSiteUrl').value.trim().replace(/\/$/, ''),
+        folderPath: document.getElementById('spFolderPath').value.trim().replace(/\/$/, '') || 'Shared Documents',
+        fileName:   document.getElementById('spFileName').value.trim() || 'shiftplanner_data.json',
+        autoSync:   document.getElementById('spAutoSync').checked
+    };
+    localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(spConfig));
+    spShowModalStatus('✅ Settings saved!', '#e6ffe6', '#107c10');
+    spSetStatus(`☁️ SP configured · Not yet synced`, '#e6f3ff', '#0078d4');
+}
+
+function spSetStatus(msg, bg, color) {
+    const bar = document.getElementById('spStatusBar');
+    if (!bar) return;
+    bar.textContent = msg;
+    bar.style.background = bg;
+    bar.style.color = color;
+    bar.style.display = 'block';
+}
+
+function spShowModalStatus(msg, bg, color) {
+    const el = document.getElementById('spModalStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = bg;
+    el.style.color = color;
+    el.style.display = 'block';
+}
+
+function spHideStatus() {
+    const el = document.getElementById('spModalStatus');
+    if (el) el.style.display = 'none';
+}
+
+// Get a fresh form digest (CSRF token) from SharePoint
+async function spGetDigest() {
+    const r = await fetch(`${spConfig.siteUrl}/_api/contextinfo`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' }
+    });
+    if (!r.ok) throw new Error(`Auth failed (${r.status}). Are you logged into SharePoint?`);
+    const data = await r.json();
+    return data.d.GetContextWebInformation.FormDigestValue;
+}
+
+// Build the server-relative file path
+function spFilePath() {
+    const site = new URL(spConfig.siteUrl);
+    const base = site.pathname.replace(/\/$/, ''); // e.g. /sites/MyTeam
+    return `${base}/${spConfig.folderPath}/${spConfig.fileName}`;
+}
+
+// Test connection
+async function spTestConnection() {
+    if (!spConfig.siteUrl) { spShowModalStatus('⚠️ Please save settings first.', '#fff3cd', '#856404'); return; }
+    spShowModalStatus('🔌 Testing connection...', '#e6f3ff', '#0078d4');
+    try {
+        const r = await fetch(`${spConfig.siteUrl}/_api/web/title`, {
+            credentials: 'include',
+            headers: { 'Accept': 'application/json;odata=verbose' }
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        const title = data.d.Title;
+        spShowModalStatus(`✅ Connected to: "${title}"`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        spShowModalStatus(`❌ Connection failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Pull from SharePoint → load into local session
+async function spPull(silent = false) {
+    if (!spConfig.siteUrl) {
+        if (!silent) spShowModalStatus('⚠️ Please configure SharePoint settings first.', '#fff3cd', '#856404');
+        return;
+    }
+    if (!silent) spShowModalStatus('⬇️ Pulling from SharePoint...', '#e6f3ff', '#0078d4');
+    try {
+        const fileUrl = `${spConfig.siteUrl}/_api/web/GetFileByServerRelativeUrl('${spFilePath()}')/$value`;
+        const r = await fetch(fileUrl, {
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (r.status === 404) {
+            if (!silent) spShowModalStatus('ℹ️ No shared file found yet. Push your data first to create it.', '#fff3cd', '#856404');
+            return;
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+        const text = await r.text();
+        const parsed = JSON.parse(text);
+
+        if (!silent && !confirm('⬇️ Pull from SharePoint?\n\nThis will REPLACE your current local data with the shared version.\n\nAny unsaved local changes will be lost. Continue?')) return;
+
+        allMonthsData = parsed;
+        localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+
+        const now = new Date().toLocaleString();
+        localStorage.setItem('shiftPlannerSPLastSync', now);
+        changeMonth(true);
+
+        const msg = `✅ Pulled at ${now}`;
+        if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
+        spSetStatus(`☁️ Pulled · ${now}`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        const msg = `❌ Pull failed: ${e.message}`;
+        if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
+        spSetStatus(`⚠️ SP pull failed`, '#fff3cd', '#856404');
+    }
+}
+
+// Push local data → SharePoint
+async function spPush(silent = false) {
+    if (!spConfig.siteUrl) {
+        if (!silent) spShowModalStatus('⚠️ Please configure SharePoint settings first.', '#fff3cd', '#856404');
+        return;
+    }
+    if (!silent) spShowModalStatus('⬆️ Pushing to SharePoint...', '#e6f3ff', '#0078d4');
+    try {
+        saveData(); // ensure latest state is in allMonthsData
+        const digest  = await spGetDigest();
+        const payload = JSON.stringify(allMonthsData);
+        const uploadUrl = `${spConfig.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '')}/${spConfig.folderPath}')/Files/Add(url='${spConfig.fileName}', overwrite=true)`;
+
+        const r = await fetch(uploadUrl, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json;odata=verbose',
+                'X-RequestDigest': digest,
+                'Content-Type': 'application/octet-stream'
+            },
+            body: payload
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status} — ${await r.text()}`);
+
+        const now = new Date().toLocaleString();
+        localStorage.setItem('shiftPlannerSPLastSync', now);
+
+        const msg = `✅ Pushed at ${now}`;
+        if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
+        spSetStatus(`☁️ Pushed · ${now}`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        const msg = `❌ Push failed: ${e.message}`;
+        if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
+        if (!silent) spSetStatus(`⚠️ SP push failed`, '#fff3cd', '#856404');
+    }
 }
 
 // ─────────────────────────────────────────────────────────
