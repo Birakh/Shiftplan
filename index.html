@@ -633,6 +633,41 @@
             <strong>Push</strong> = upload your current session to GitHub so all colleagues see it.<br>
             ⚠️ Last push wins — coordinate with your team or use auto-sync (which pulls before pushing).
         </div>
+
+        <!-- Comment Sync section — GitHub only, shared token embedded in HTML -->
+        <div style="margin-top:14px; background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:12px; font-size:12px;">
+            <strong style="font-size:13px;">💬 Comments Sync <span style="font-weight:normal; color:#27ae60; font-size:11px;">— GitHub only, no login needed for users</span></strong>
+            <p style="font-size:11px; color:#555; margin:6px 0 10px 0;">
+                Comments are stored in <code>shiftplanner_comments.json</code> in the same GitHub repo.<br>
+                Everyone can read &amp; write comments using a <strong>shared token embedded in the HTML</strong> — users need zero setup.
+            </p>
+
+            <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:4px; padding:8px; margin-bottom:10px; font-size:11px;">
+                <strong>⚙️ One-time admin setup:</strong><br>
+                1. Create a fine-grained PAT with <em>Contents: Read &amp; Write</em> on this repo<br>
+                2. Paste it into the <strong>Shared Comments Token</strong> field below and click Save<br>
+                3. Download the HTML (⬇️ button) and commit it to your repo — the token is now baked in<br>
+                4. Done! All users who open the page can read/write comments automatically ✅
+            </div>
+
+            <div style="margin-bottom:8px;">
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Shared Comments Token (PAT)</label>
+                <input id="cmtSharedToken" type="password" placeholder="ghp_xxxxxxxxxxxx (paste once, then re-download HTML)"
+                    style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                <small style="color:#666;">This token is embedded in the HTML file itself — not stored in localStorage. It can be read-only or read-write.</small>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <button onclick="saveSharedCommentToken()" style="background:#27ae60; color:white; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Token</button>
+                <button onclick="cmtPull()" style="background:#0969da; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">⬇️ Pull Comments</button>
+                <button onclick="cmtPush()" style="background:#1a7f37; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">⬆️ Push Comments</button>
+                <button onclick="cmtTest()" style="background:#605e5c; color:white; border:none; padding:6px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
+            </div>
+            <div id="cmtStatus" style="display:none; margin-top:8px; padding:6px 10px; border-radius:4px; font-size:11px;"></div>
+            <p style="font-size:10px; color:#888; margin:8px 0 0 0;">
+                💡 The shared token is embedded in the HTML — it will be visible in the page source. Use a <em>fine-grained token scoped only to this repo</em> to limit exposure. Rotate it anytime by repeating the setup above.
+            </p>
+        </div>
     </div>
 </div>
 
@@ -744,8 +779,15 @@ let use6H  = false;  // toggled via "Enable 6H"  checkbox in Setup panel
 let currentLang = 'en'; // 'en' or 'de'
 
 // GitHub sync config (stored separately in localStorage, not per-month)
-// owner = GitHub username/org, repo = repository name, token = PAT
+// owner = GitHub username/org, repo = repository name, token = PAT (personal per user)
 let spConfig = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
+
+// ── Comment Sync — uses a SHARED token embedded in the HTML ──
+// The admin sets this once. All users (locked or unlocked) can read/write
+// comments without any personal login or per-user setup.
+// File stored in same GitHub repo: shiftplanner_comments.json
+let COMMENTS_SHARED_TOKEN = ''; // ← Admin pastes their PAT here once, then re-uploads HTML to repo
+let commentSyncDebounceTimer = null;
 
 // ── Edit-mode lock ──
 let isEditMode = false;   // false = view/comment only, true = full edit
@@ -1237,6 +1279,8 @@ function changeMonth(isInit=false) {
     loadMonthData(currentMonthKey);
     saveData();
     renderTable();
+    // Auto-pull comments for this month (silent, no login needed)
+    setTimeout(() => cmtPull(true), 300);
 }
 
 function refreshBoard() { saveData(); renderTable(); }
@@ -1432,7 +1476,7 @@ function updateShift(wIndex, dIndex, value) {
     pushUndo(); workers[wIndex].shifts[dIndex]=value; saveData(); renderTable();
 }
 function updateRequest(wIndex, dIndex, isChecked) { workers[wIndex].requests[dIndex]=isChecked; saveData(); renderTable(); }
-function updateComment(dIndex, text) { dailyComments[dIndex]=text; saveData(); }
+function updateComment(dIndex, text) { dailyComments[dIndex]=text; saveData(); scheduleCommentSync(); }
 
 function toggleHoliday(dIndex) {
     if (isHoliday(dIndex)) {
@@ -1826,7 +1870,7 @@ function renderTable() {
         <th style="min-width:150px;">Room Warnings</th>
         <th style="min-width:90px; color:#c0392b;">🤒 Sick</th>
         <th style="min-width:90px; color:#8e44ad;">🏖 Vacation</th>
-        <th>Daily Comments</th></tr>`;
+        <th>💬 Daily Comments${cmtReady() ? ' <span title=\'Comment sync ON\' style=\'color:#27ae60; font-size:10px;\'>●</span>' : ' <span title=\'Comment sync not configured — see 🐙 GitHub Sync\' style=\'color:#aaa; font-size:10px;\'>○</span>'}</th></tr>`;
     document.getElementById('tableHead').innerHTML = headHTML;
 
     // ── Body ──
@@ -2011,9 +2055,9 @@ function renderTable() {
                 ${vacNames.map(n=>`<span class="name-chip" style="background:#d0a9f5; display:block; margin-bottom:2px;">${n}</span>`).join('')}
             </td>
             <td style="vertical-align:middle;">
-                <input type="text" class="comment-input" placeholder="Type notes..."
+                <input type="text" class="comment-input" data-day="${d}" placeholder="Type notes..."
                     value="${(dailyComments[d]||'').replace(/"/g,'&quot;')}"
-                    onchange="updateComment(${d},this.value)">
+                    oninput="updateComment(${d},this.value)">
             </td></tr>`;
     }
     document.getElementById('tableBody').innerHTML = bodyHTML;
@@ -3321,7 +3365,8 @@ async function ghReadFile(file) {
     if (r.status === 404) return null;
     if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
     const data = await r.json();
-    return atob(data.content.replace(/\n/g, ''));
+    // UTF-8-safe decode to match btoa(unescape(encodeURIComponent(str))) on write
+    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
 }
 
 // Write a file to GitHub (create or update)
@@ -3353,6 +3398,11 @@ function openSPModal() {
     document.getElementById('spFolderPath').value = spConfig.folderPath || '';
     document.getElementById('spFileName').value   = spConfig.fileName   || '';
     document.getElementById('spAutoSync').checked = spConfig.autoSync   || false;
+    // Show current shared token (masked) in comment section
+    const cmtField = document.getElementById('cmtSharedToken');
+    if (cmtField) cmtField.value = COMMENTS_SHARED_TOKEN || '';
+    const cmtEl = document.getElementById('cmtStatus');
+    if (cmtEl) cmtEl.style.display = 'none';
     spHideStatus();
     document.getElementById('spModal').style.display = 'block';
 }
@@ -3479,6 +3529,165 @@ async function spPush(silent = false) {
         if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
         if (!silent) spSetStatus(`⚠️ GitHub push failed`, '#fff3cd', '#856404');
     }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Comment Sync — GitHub only, shared embedded token
+//  File: shiftplanner_comments.json in the same repo
+//  Token is baked into the HTML by the admin — users need zero setup.
+// ─────────────────────────────────────────────────────────
+
+// Admin saves the shared token — updates COMMENTS_SHARED_TOKEN in memory
+// and patches the HTML file in-repo so the token is baked in for all users.
+async function saveSharedCommentToken() {
+    const token = document.getElementById('cmtSharedToken').value.trim();
+    if (!token) { cmtShowStatus('⚠️ Please paste a PAT first.', '#fff3cd', '#856404'); return; }
+    if (!spConfig.siteUrl || !spConfig.folderPath) {
+        cmtShowStatus('⚠️ Configure GitHub owner & repo in the settings above first.', '#fff3cd', '#856404');
+        return;
+    }
+    COMMENTS_SHARED_TOKEN = token;
+    cmtShowStatus('💾 Token saved in memory. Use ⬇️ Download as HTML to bake it into the file, then commit to your repo.', '#e6f3ff', '#0969da');
+}
+
+function cmtShowStatus(msg, bg, color) {
+    const el = document.getElementById('cmtStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = bg;
+    el.style.color = color;
+    el.style.display = 'block';
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => { if (el.textContent === msg) el.style.display = 'none'; }, 5000);
+}
+
+// The token to use for comments — shared token if set, else fall back to personal PAT
+function cmtToken() {
+    return COMMENTS_SHARED_TOKEN || spConfig.fileName || '';
+}
+
+function cmtReady() {
+    return !!(cmtToken() && spConfig.siteUrl && spConfig.folderPath);
+}
+
+// Pull comments for current month from GitHub
+async function cmtPull(silent = false) {
+    if (!cmtReady()) {
+        if (!silent) cmtShowStatus('⚠️ Configure GitHub settings and save a Shared Comments Token first.', '#fff3cd', '#856404');
+        return;
+    }
+    try {
+        const text = await ghReadFileWith('shiftplanner_comments.json', cmtToken());
+        if (text === null) return; // file doesn't exist yet — no comments to load
+
+        const remote = JSON.parse(text);
+
+        // Update live dailyComments for current month if present
+        if (remote[currentMonthKey] && Array.isArray(remote[currentMonthKey])) {
+            dailyComments = remote[currentMonthKey];
+            // Patch DOM inputs without full re-render (skip the focused one)
+            dailyComments.forEach((txt, d) => {
+                const inp = document.querySelector(`.comment-input[data-day="${d}"]`);
+                if (inp && document.activeElement !== inp) inp.value = txt || '';
+            });
+            // Also persist into allMonthsData
+            if (allMonthsData[currentMonthKey]) {
+                allMonthsData[currentMonthKey].dailyComments = dailyComments;
+                localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+            }
+        }
+        if (!silent) cmtShowStatus(`✅ Comments pulled (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        if (!silent) cmtShowStatus(`❌ Pull failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Push current month's comments to GitHub (merges with other months)
+async function cmtPush(silent = false) {
+    if (!cmtReady()) {
+        if (!silent) cmtShowStatus('⚠️ Configure GitHub settings and save a Shared Comments Token first.', '#fff3cd', '#856404');
+        return;
+    }
+    try {
+        // Load existing comments file first so we don't erase other months
+        let existing = {};
+        try {
+            const text = await ghReadFileWith('shiftplanner_comments.json', cmtToken());
+            if (text) existing = JSON.parse(text);
+        } catch(e) { /* file may not exist yet */ }
+
+        existing[currentMonthKey] = dailyComments;
+
+        await ghWriteFileWith(
+            'shiftplanner_comments.json',
+            JSON.stringify(existing, null, 2),
+            cmtToken(),
+            `Comments update · ${currentMonthKey} · ${new Date().toISOString()}`
+        );
+        if (!silent) cmtShowStatus(`✅ Comments saved (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        if (!silent) cmtShowStatus(`❌ Push failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Test comment sync connection
+async function cmtTest() {
+    if (!cmtToken()) {
+        cmtShowStatus('⚠️ No token set. Paste a Shared Comments Token above.', '#fff3cd', '#856404');
+        return;
+    }
+    if (!spConfig.siteUrl || !spConfig.folderPath) {
+        cmtShowStatus('⚠️ Configure GitHub owner & repo first.', '#fff3cd', '#856404');
+        return;
+    }
+    cmtShowStatus('🔌 Testing...', '#f6f8fa', '#24292f');
+    try {
+        const r = await fetch(
+            `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}`,
+            { headers: { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${cmtToken()}`, 'X-GitHub-Api-Version':'2022-11-28' } }
+        );
+        if (r.status === 401) throw new Error('Invalid token');
+        if (r.status === 404) throw new Error('Repo not found');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        cmtShowStatus(`✅ Connected to ${d.full_name} — comments ready!`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        cmtShowStatus(`❌ ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Debounced auto-push on every comment keystroke
+function scheduleCommentSync() {
+    if (!cmtReady()) return;
+    clearTimeout(commentSyncDebounceTimer);
+    commentSyncDebounceTimer = setTimeout(() => cmtPush(true), 2000);
+}
+
+// ── GitHub API helpers that accept an explicit token ──
+// (so comments can use the shared token, shift data uses personal PAT)
+
+async function ghReadFileWith(file, token) {
+    const url = `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+    const r = await fetch(url, {
+        headers: { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${token}`, 'X-GitHub-Api-Version':'2022-11-28' }
+    });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+}
+
+async function ghWriteFileWith(file, content, token, commitMsg) {
+    const url = `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+    const hdrs = { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${token}`, 'X-GitHub-Api-Version':'2022-11-28', 'Content-Type':'application/json' };
+    // Get current SHA
+    let sha;
+    try { const r = await fetch(url, { headers: hdrs }); if (r.ok) { const d = await r.json(); sha = d.sha; } } catch(e) {}
+    const body = { message: commitMsg || `Update · ${new Date().toISOString()}`, content: btoa(unescape(encodeURIComponent(content))) };
+    if (sha) body.sha = sha;
+    const r = await fetch(url, { method:'PUT', headers: hdrs, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error(`GitHub write ${r.status}: ${await r.text()}`);
+    return await r.json();
 }
 
 // ─────────────────────────────────────────────────────────
