@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Monthly Shift Planner</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 20px; font-size: 13px; }
+        h1, h2 { color: #333; margin-top: 0; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 300px; }
+        .form-group { margin-bottom: 10px; }
+        input[type="text"], input[type="month"], input[type="number"], select, button { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #0056b3; color: white; cursor: pointer; border: none; font-weight: bold; padding: 8px 12px; }
+        button:hover { background-color: #004494; }
+
+        .btn-half-l { margin-top: 7px; width: 48%; font-size: 11px; float: left;  padding: 5px 6px; }
+        .btn-half-r { margin-top: 7px; width: 48%; font-size: 11px; float: right; padding: 5px 6px; }
+        .btn-full   { margin-top: 7px; width: 100%; font-size: 11px; clear: both; display: block; padding: 6px; }
+
+        .btn-auto     { background-color: #28a745; } .btn-auto:hover     { background-color: #218838; }
+        .btn-ai       { background-color: #8e44ad; } .btn-ai:hover       { background-color: #732d91; }
+        .btn-personal { background-color: #27ae60; } .btn-personal:hover { background-color: #219653; }
+        .btn-help     { background-color: #f39c12; } .btn-help:hover     { background-color: #e67e22; }
+        .btn-refresh  { background-color: #34495e; } .btn-refresh:hover  { background-color: #2c3e50; }
+        .btn-export   { background-color: #17a2b8; } .btn-export:hover   { background-color: #138496; }
+        .btn-clear    { background-color: #dc3545; } .btn-clear:hover    { background-color: #c82333; }
+        .btn-backup   { background-color: #6c757d; } .btn-backup:hover   { background-color: #5a6268; }
+        .btn-restore  { background-color: #20c997; } .btn-restore:hover  { background-color: #17a589; }
+        .btn-select   { background-color: #34495e; } .btn-select:hover   { background-color: #2c3e50; }
+        .btn-select.active { background-color: #e67e22; }
+        .btn-undo     { background-color: #5d6d7e; } .btn-undo:hover     { background-color: #4a5568; }
+        .btn-redo     { background-color: #5d6d7e; } .btn-redo:hover     { background-color: #4a5568; }
+        .btn-undo:disabled, .btn-redo:disabled { background-color: #bdc3c7; cursor: not-allowed; opacity: 0.6; }
+        .min-staff-alert { background-color: #ff6b6b !important; color: white !important; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; background: white; white-space: nowrap; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 12px; vertical-align: top; }
+        th { background-color: #eee; position: sticky; top: 0; z-index: 10; }
+        .sticky-col { position: sticky; left: 0; background-color: #f9f9f9; z-index: 5; font-weight: bold; }
+        th.sticky-col { z-index: 15; background-color: #eee; }
+
+        .weekend     { background-color: #f0f0f0 !important; }
+        .holiday-row { background-color: #e8daef !important; }
+
+        .checkbox-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px; }
+        .shift-select { width: 100%; min-width: 75px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; color: #222; font-size: 11px; }
+
+        .warning           { background-color: #ffcccc !important; color: #cc0000; font-weight: bold; }
+        .warning-yellow    { background-color: #fff3cd !important; color: #856404; font-weight: bold; }
+        .optimal           { background-color: #ccffcc !important; color: #006600; font-weight: bold; }
+        .consecutive-warning { border: 3px solid #cc0000 !important; box-shadow: inset 0 0 5px red; }
+
+        .table-wrapper { overflow: auto; max-height: 70vh; max-width: 100vw; border: 1px solid #ccc; border-radius: 4px; }
+        .room-box { text-align: left; font-size: 11px; min-width: 120px; line-height: 1.8; }
+        .comment-input { width: 120px; font-size: 11px; padding: 4px; }
+        .name-chip { display: inline-block; padding: 1px 4px; border-radius: 4px; font-weight: bold; border: 1px solid rgba(0,0,0,0.1); margin-bottom: 2px; white-space: nowrap; }
+        .tgt-input { width: 30px; font-size: 11px; padding: 2px; text-align: center; border: 1px solid #aaa; border-radius: 3px; background: #fffbcc; font-weight: bold; }
+        .tgt-panel-input { width: 35px; text-align: center; font-weight: bold; margin-right: 5px; }
+
+        /* ── Select Mode ── */
+        .select-mode-active .shift-select { pointer-events: none; }
+        .select-mode-active td[data-cell] { cursor: crosshair !important; }
+        td.selected-cell { outline: 3px solid #e67e22 !important; outline-offset: -2px; background-color: rgba(230,126,34,0.15) !important; }
+
+        /* ── Selection Bar (fixed bottom) ── */
+        #selectionBar { display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            background: #2c3e50; color: white; padding: 10px 20px;
+            align-items: center; gap: 12px; z-index: 200;
+            box-shadow: 0 -3px 10px rgba(0,0,0,0.35); flex-wrap: wrap; }
+        #selectionBar.visible { display: flex; }
+        #selectionBar select  { padding: 6px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        #selectionBar button  { padding: 6px 14px; border-radius: 4px; font-size: 13px; }
+
+        /* ── Stats Panel ── */
+        #statsPanel { display: none; background: white; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 15px; margin-top: 20px; overflow-x: auto; }
+        #statsPanel.visible { display: block; }
+        #statsPanel table { font-size: 12px; }
+        #statsPanel thead th { background: #34495e; color: white; padding: 8px; white-space: nowrap; }
+        #statsPanel tbody td { padding: 6px 10px; }
+        #statsPanel tbody tr:nth-child(even) { background: #f8f9fa; }
+        .stats-good { color: #27ae60; font-weight: bold; }
+        .stats-warn { color: #e67e22; font-weight: bold; }
+        .stats-bad  { color: #c0392b; font-weight: bold; }
+
+        /* ── Modals ── */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 700px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover { color: black; }
+
+        /* ── Small Edit/Delete worker buttons in table header ── */
+        .btn-delete-worker { padding: 0px 3px !important; font-size: 9px !important; font-weight: normal !important;
+            line-height: 1.1; border-radius: 2px; margin-left: 1px; cursor: pointer;
+            background-color: #f0f0f0 !important; color: #666 !important; border: 1px solid #bbb !important; }
+        .btn-delete-worker:hover { background-color: #ddd !important; color: #111 !important; }
+    </style>
+</head>
+<body>
+
+<h1 id="pageTitle" class="no-print" style="display:inline-block; margin-right:16px;">Shift Planner (Forever Memory Enabled ⏳💾)</h1>
+<button id="langToggleBtn" onclick="toggleLang()" style="padding:4px 12px; font-size:12px; font-weight:bold; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; vertical-align:middle; margin-bottom:6px;">🌐 Deutsch</button>
+
+<div class="container no-print">
+
+    <!-- ═══ PANEL 1: Setup & Action ═══ -->
+    <div class="panel" style="flex: 1.2;">
+        <h2 id="p1title">1. Setup & Action</h2>
+        <div class="form-group">
+            <label id="monthLabel"><strong>Month (Auto-detects AT Holidays):</strong></label><br>
+            <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+                <select id="monthPickerMonth" onchange="changeMonthFromDropdowns()" style="flex:1; font-weight:bold; padding:5px;">
+                    <option value="1">January</option><option value="2">February</option>
+                    <option value="3">March</option><option value="4">April</option>
+                    <option value="5">May</option><option value="6">June</option>
+                    <option value="7">July</option><option value="8">August</option>
+                    <option value="9">September</option><option value="10">October</option>
+                    <option value="11">November</option><option value="12">December</option>
+                </select>
+                <select id="monthPickerYear" onchange="changeMonthFromDropdowns()" style="width:75px; font-weight:bold; padding:5px;">
+                </select>
+            </div>
+            <input type="hidden" id="monthPicker">
+        </div>
+
+        <div class="form-group" style="background:#f9f9f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
+            <strong id="targetsTitle">Master Granular Targets</strong><br>
+            <small id="wdLabel">Weekday Defaults:</small><br>
+            8E: <input type="number" id="mstWd8E" class="tgt-panel-input" value="4" onchange="saveMasterTargets()">
+            8M: <input type="number" id="mstWd8M" class="tgt-panel-input" value="2" onchange="saveMasterTargets()">
+            8L: <input type="number" id="mstWd8L" class="tgt-panel-input" value="4" onchange="saveMasterTargets()">
+            <span id="wd13wrap">13H:<input type="number" id="mstWd13" class="tgt-panel-input" value="2" onchange="saveMasterTargets()"></span>
+            6H: <input type="number" id="mstWd6"  class="tgt-panel-input" value="1" onchange="saveMasterTargets()"><br>
+            <small id="weLabel" style="display:inline-block; margin-top:5px;">Weekend/Holiday Defaults:</small><br>
+            8E: <input type="number" id="mstWe8E" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
+            8M: <input type="number" id="mstWe8M" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
+            8L: <input type="number" id="mstWe8L" class="tgt-panel-input" value="0" onchange="saveMasterTargets()">
+            <span id="we13wrap">13H:<input type="number" id="mstWe13" class="tgt-panel-input" value="0" onchange="saveMasterTargets()"></span>
+            6H: <input type="number" id="mstWe6"  class="tgt-panel-input" value="0" onchange="saveMasterTargets()"><br>
+            <div style="margin-top:6px; padding:6px; background:#e8f4fc; border-radius:3px; border:1px solid #aed6f1;">
+                <strong id="immoTgtTitle" style="color:#1a5276;">🏥 Immo Targets (Weekdays only)</strong>
+                <span id="immoTgtNote" style="font-size:10px; color:#555; display:block; margin-bottom:3px;">Warning-only — Auto-Fill never touches these. Use Jump-in workers to cover gaps.<br>Immo always 0 on weekends &amp; holidays.</span>
+                ImE: <input type="number" id="mstWdImE" class="tgt-panel-input" value="2" onchange="saveMasterTargets()">
+                ImL: <input type="number" id="mstWdImL" class="tgt-panel-input" value="1" onchange="saveMasterTargets()">
+            </div>
+        </div>
+
+        <div style="margin:6px 0 4px 0; padding:7px 9px; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:11px;">
+            <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-weight:bold; color:#555;">
+                <input type="checkbox" id="toggle13H" onchange="toggle13HShift()">
+                <span id="toggle13Hlabel">Enable <span style="background:#ffe599; padding:1px 5px; border-radius:3px;">13H</span> shifts (07:00–20:00)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-weight:bold; color:#555; margin-top:4px;">
+                <input type="checkbox" id="toggle6H" onchange="toggle6HShift()">
+                <span id="toggle6Hlabel">Enable <span style="background:#d9ead3; padding:1px 5px; border-radius:3px;">6H</span> shifts (07:00–13:00)</span>
+            </label>
+            <span id="toggleShiftNote" style="display:block; margin-top:3px; color:#888; font-size:10px;">When off: column hidden, Auto-Fill skips it.</span>
+        </div>
+
+        <div style="margin:4px 0; padding:7px 9px; background:#f0faf0; border:1px solid #a5d6a7; border-radius:4px; font-size:11px; color:#2e7d32;">
+            <span id="fairNote">⚖️ <strong>Fair 8L / 8M rotation:</strong> Auto-Fill uses a weekly late quota per worker — so every worker gets ~2–3 lates and ~2–3 earlies each week, and 8L (22:30) vs 8M (20:00) are kept balanced too.</span>
+        </div>
+
+        <button id="btnAutoFill" class="btn-auto btn-full" onclick="autoGenerate()">✨ Smart Auto-Fill</button>
+        <div style="clear:both; overflow:hidden;">
+            <button class="btn-undo btn-half-l" id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
+            <button class="btn-redo btn-half-r" id="redoBtn" onclick="redo()" disabled>↪ Redo</button>
+        </div>
+        <div style="clear:both; overflow:hidden;">
+            <button id="btnAI"       class="btn-ai    btn-half-l" onclick="runAIAnalysis()">🤖 AI Analysis</button>
+            <button id="btnPersonal" class="btn-personal btn-half-r" onclick="openPersonalModal()">📱 Personal Export</button>
+        </div>
+        <div style="clear:both; overflow:hidden;">
+            <button id="btnHelp"    class="btn-help    btn-half-l" onclick="document.getElementById('helpModal').style.display='block'">📖 Help & Guide</button>
+            <button id="btnRefresh" class="btn-refresh btn-half-r" onclick="refreshBoard()">🔄 Refresh Board</button>
+        </div>
+        <div style="clear:both; overflow:hidden;">
+            <button id="btnBackup"  class="btn-backup  btn-half-l" onclick="backupData()">💾 Backup JSON</button>
+            <button id="btnRestore" class="btn-restore btn-half-r" onclick="document.getElementById('restoreInput').click()">📂 Restore JSON</button>
+            <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(this)">
+        </div>
+        <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
+        <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML (SharePoint)</button>
+        <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
+        <div style="clear:both; overflow:hidden; margin-top:10px;">
+            <button class="btn-select btn-half-l" id="selectModeBtn" onclick="toggleSelectMode()">⬜ Select Mode</button>
+            <button id="btnClear" class="btn-clear  btn-half-r" onclick="clearBoard()">🗑️ Clear Month</button>
+        </div>
+    </div>
+
+    <!-- ═══ PANEL 2: Add Worker ═══ -->
+    <div class="panel" style="flex: 1.5;">
+        <h2 id="p2title">2. Add Worker</h2>
+        <!-- Field labels row -->
+        <div style="display:flex; gap:6px; flex-wrap:wrap; font-size:10px; color:#555; margin-bottom:2px; font-weight:bold;">
+            <span id="lbl_name" style="width:84px;">Name</span>
+            <span id="lbl_sys"  style="width:60px;">System</span>
+            <span id="lbl_con"  style="width:52px;">Contract</span>
+            <span id="lbl_pref" style="width:102px;">Shift Preference</span>
+            <span id="lbl_immo" style="width:110px;">Immo Role</span>
+        </div>
+        <div class="form-group" style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start;">
+            <input type="text" id="workerName" placeholder="e.g. AAA" style="width:84px;">
+            <select id="workerSystem" style="width:60px;"><option value="New">New</option><option value="Old">Old</option></select>
+            <select id="workerContract" onchange="toggle22hOptions()" style="width:52px;">
+                <option value="40">40h</option><option value="32">32h</option>
+                <option value="24">24h</option><option value="22">22h</option>
+            </select>
+            <select id="workerPref" style="width:102px;">
+                <option value="Any" id="opt_mixed">Mixed Shifts</option>
+                <option value="Early" id="opt_early">Early Only</option>
+                <option value="Late" id="opt_late">Late Only</option>
+            </select>
+            <select id="workerImmo" onchange="toggleImmoOptions()" style="width:110px;">
+                <option value="None" id="opt_std">Standard</option>
+                <option value="Fixed" id="opt_fimmo">Fixed Immo</option>
+                <option value="Jump" id="opt_jimmo">Immo Jump-in</option>
+            </select>
+        </div>
+
+        <!-- Quick-reference explanation box -->
+        <div id="fieldGuideBox" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px; padding:8px; font-size:11px; color:#444; margin-bottom:8px; line-height:1.6;">
+            <strong style="font-size:12px;">📋 Field Guide</strong><br>
+            <strong>System — New vs Old:</strong><br>
+            <span style="display:inline-block; margin-left:8px;">
+                <strong>New</strong> = newer employment system — Auto-Fill uses a <em>flexible weekly hour target</em> (alternating slightly higher/lower weeks around the contract hours) and includes 13H and 6H shifts in the mix.<br>
+                <strong>Old</strong> = older employment system — Auto-Fill uses a <em>strict rotating week pattern</em>: one full week of Early shifts (8E), the next full week of Late shifts (8L/8M), and repeats. No 13H or 6H assigned.
+            </span>
+            <strong>⚠️ System has no effect on Immo workers</strong> (Fixed or Jump-in) — their schedule is always based on the Immo Role setting below.<br><br>
+
+            <strong>Shift Preference (non-Immo workers only):</strong><br>
+            <span style="display:inline-block; margin-left:8px;">
+                <strong>Mixed Shifts</strong> = Auto-Fill freely assigns 8E, 8L, 8M, 13H, and 6H to balance the schedule and hit daily targets. Best for most staff.<br>
+                <strong>Early Only</strong> = only 8E shifts assigned — never a late or mid shift. Good for workers who can't do late evenings.<br>
+                <strong>Late Only</strong> = only 8L/8M shifts assigned — never an early. Good for workers who prefer afternoons/evenings.
+            </span>
+
+            <strong>Immo Role:</strong><br>
+            <span style="display:inline-block; margin-left:8px;">
+                <strong>Standard</strong> = regular ward worker, no Immo involvement.<br>
+                <strong>Fixed Immo</strong> = works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 08:00–16:30). System and Shift Preference fields are ignored.<br>
+                <strong>Immo Jump-in</strong> = normally a regular worker. Manually assign ImE/ImL in the table when Immo needs cover (sick, understaffed).
+            </span>
+
+            <div style="margin-top:6px; padding:5px 7px; background:#f3e5ff; border-left:3px solid #6c3483; border-radius:0 3px 3px 0; font-size:11px;">
+                <strong style="color:#6c3483;">⏰ Custom Shift Hours</strong><br>
+                Every cell has a tiny purple <strong>⏰</strong> button. Click it to set a custom start and end time for that worker on that day (e.g. 09:00–17:00).<br>
+                If the shift spans <em>both before noon and after 14:00</em>, it is counted in <strong>both</strong> the 8E and 8L daily buckets and the cell shows a <strong style="color:#6c3483;">★</strong> symbol — meaning this person is covering an overlap day and leaving earlier than usual.
+            </div>
+
+            <div style="margin-top:6px; padding:5px 7px; background:#eaf0fb; border-left:3px solid #34495e; border-radius:0 3px 3px 0; font-size:11px;">
+                <strong style="color:#34495e;">📋 LSS Day Popup</strong><br>
+                Clicking an LSS checkbox opens a popup where you choose <em>exactly which workers</em> get LSS that day. Fixed Immo workers are unchecked by default so their Immo shifts are never overwritten.
+            </div>
+        </div>
+        <!-- Fixed Immo options: shown/hidden via toggleImmoOptions() -->
+        <div class="form-group" id="rowImmo" style="display:none; background:#e8f4fc; padding:8px; border-radius:4px; border:1px solid #aed6f1; font-size:12px;">
+            <label><strong>🏥 Immo Shift Preference:</strong></label><br>
+            <select id="workerImmoPref" onchange="toggleImmoRatio()" style="margin-top:4px; font-weight:bold; width:100%;">
+                <option value="Mixed">Mixed — both ImE &amp; ImL during the week</option>
+                <option value="ImE">ImE Only — always 07:00–15:30</option>
+                <option value="ImL">ImL Only — always 08:00–16:30</option>
+            </select>
+            <!-- Ratio row: only shown for Mixed -->
+            <div id="rowImmoRatio" style="margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span>ImE share:</span>
+                    <input type="range" id="workerImmoRatio" min="10" max="90" value="60" step="10"
+                        style="flex:1; min-width:80px;" oninput="updateImmoRatioLabel()">
+                    <span id="immoRatioLabel" style="font-weight:bold; color:#1a5276; min-width:55px;">60% ImE</span>
+                </label>
+                <small style="color:#555; display:block; margin-top:2px;">Remaining 40% will be ImL</small>
+            </div>
+            <small style="color:#555; display:block; margin-top:6px;">
+                <strong>Fixed Immo</strong> workers do <em>only</em> ImE / ImL shifts — never regular wards.<br>
+                <strong>Jump-in</strong> workers do regular shifts; Immo cover is manual only (when sick/understaffed).
+            </small>
+        </div>
+        <!-- 22h-only option: shown/hidden via toggle22hOptions() -->
+        <div class="form-group" id="row22h" style="display:none; background:#e8f8f0; padding:8px; border-radius:4px; border:1px solid #a9dfbf; font-size:12px;">
+            <label><strong>📅 Fixed 6H Day (07:00–13:00):</strong></label><br>
+            <select id="worker6HDay" style="margin-top:4px; font-weight:bold; width:100%;">
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+            </select>
+            <small style="color:#555; display:block; margin-top:4px;">
+                Auto-Fill places 6H on this day every week, then adds 2 × 8H shifts to complete ~22h.
+                Holidays and vacation days on this day are respected automatically.
+            </small>
+        </div>
+        <div class="form-group">
+            <label id="lbl_fixedoff"><strong>Fixed Days Off:</strong></label>
+            <div class="checkbox-group" id="fixedOffCheckboxes">
+                <label><input type="checkbox" value="1"><span class="dow_mo">Mo</span></label>
+                <label><input type="checkbox" value="2"><span class="dow_tu">Tu</span></label>
+                <label><input type="checkbox" value="3"><span class="dow_we">We</span></label>
+                <label><input type="checkbox" value="4"><span class="dow_th">Th</span></label>
+                <label><input type="checkbox" value="5"><span class="dow_fr">Fr</span></label>
+                <label><input type="checkbox" value="6"><span class="dow_sa">Sa</span></label>
+                <label><input type="checkbox" value="0"><span class="dow_su">Su</span></label>
+            </div>
+        </div>
+        <button id="btnAddWorker" onclick="addWorkerFromForm()">+ Add Worker</button>
+        <button id="btnClearAll" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
+    </div>
+
+    <!-- ═══ PANEL 3: Legend ═══ -->
+    <div class="panel" style="flex: 1.5;">
+        <h2 id="p3title">Legend & Limits</h2>
+        <ul style="column-count:2; margin-top:0; font-size:11px;">
+            <li><span style="background:#a2c4c9; padding:1px 4px;">ImE</span> Immo 07:00–15:30</li>
+            <li><span style="background:#76a5af; padding:1px 4px;">ImL</span> Immo 08:00–16:30</li>
+            <li><span style="background:#ffe599; padding:1px 4px;">13H</span> 07:00–20:00 ⚙️</li>
+            <li><span style="background:#cfe2f3; padding:1px 4px;">8E</span>  07:00–15:30</li>
+            <li><span style="background:#f4cccc; padding:1px 4px;">8L</span>  14:00–22:30 🔴 IR2</li>
+            <li><span style="background:#f9cb9c; padding:1px 4px;">8M</span>  11:30–20:00 🟡 IR3/IR4</li>
+            <li><span style="background:#d9ead3; padding:1px 4px;">6H</span>  07:00–13:00 ★</li>
+            <li><span style="background:#b6d7a8; padding:1px 4px;">Offc</span> Office</li>
+            <li><span style="background:#9fc5e8; padding:1px 4px;">FB</span>   Fortbildung</li>
+            <li><span style="background:#d9d9d9; padding:1px 4px;">LSS</span>  Long Service</li>
+            <li><span style="background:#d0a9f5; padding:1px 4px;">Urlaub</span> Vacation</li>
+            <li><span style="background:#fce5cd; padding:1px 4px;">RB1/2</span> On-Call</li>
+            <li><span style="background:#e8d5f5; padding:1px 4px;">⏰ CUS</span> Custom Hours ★</li>
+        </ul>
+        <div style="font-size:11px; padding:6px 8px; background:#fff3e0; border-left:3px solid #e67e22; border-radius:0 4px 4px 0; margin-bottom:6px;">
+            ⚖️ <strong>8L vs 8M fairness:</strong> Auto-Fill tracks each worker's 8L (IR2, until 22:30) and 8M (IR3/IR4, until 20:00) counts independently and always assigns the shift type they have fewer of — so no one always ends up with the hardest late slot.
+        </div>
+        <div style="font-size:11px; margin:4px 0; padding:7px 8px; background:#e8f4fc; border-left:3px solid #2e86c1; border-radius:0 4px 4px 0;">
+            <strong>🏥 Immo Worker Types:</strong><br>
+            <span style="color:#1a5276;"><strong>[F.Immo]</strong></span> Fixed Immo — <em>Immo shifts only</em> (ImE / ImL or mixed), never regular wards.<br>
+            <span style="color:#8e44ad;"><strong>[J.Immo]</strong></span> Jump-in — regular worker; covers Immo <em>manually</em> when someone is sick or understaffed.
+        </div>
+        <p style="font-size:10px; margin:4px 0; color:#555;">★ 6H = fixed weekly short shift for 22h workers — day is chosen per worker when adding them</p>
+        <p style="font-size:10px; margin:2px 0; color:#6c3483;">★ CUS (Custom Hours) — if the shift spans both early &amp; late (e.g. 07:00–16:00), it is counted in <em>both</em> 8E and 8L buckets and marked with ★ in the cell.</p>
+        <div style="margin-top:8px; padding:10px; background:#fffbcc; border:1px solid #e1d670; border-radius:4px;">
+            <p style="font-size:12px; margin:0 0 5px 0;">
+                <strong id="lbl_maxvac">Max Vacation per day:</strong>
+                <input type="number" id="maxVacation" value="2" style="width:40px;" onchange="refreshBoard()">
+                <br><span id="lbl_vacnote" style="font-size:10px; color:#555;">Yellow = 1 spot left &nbsp;|&nbsp; Red = Full</span>
+            </p>
+            <p style="font-size:12px; margin:0 0 5px 0;">
+                <strong id="lbl_maxcon">Max Consecutive Days:</strong>
+                <input type="number" id="maxConsecutive" value="5" style="width:40px;" onchange="refreshBoard()">
+            </p>
+            <p style="font-size:12px; margin:0 0 5px 0;">
+                <strong id="lbl_minstaf">Min Working Staff / day:</strong>
+                <input type="number" id="minStaff" value="0" style="width:40px;" onchange="refreshBoard()">
+                <br><span id="lbl_minstafnote" style="font-size:10px; color:#555;">0 = disabled &nbsp;|&nbsp; Date cell turns <span style="background:#ff6b6b; color:white; padding:0 3px;">red</span> if below</span>
+            </p>
+            <p id="lbl_shortcuts" style="font-size:11px; margin:0; color:#555;">
+                <strong>⌨ Arrow keys</strong> navigate cells when a dropdown is focused.<br>
+                <strong>Ctrl+Z / Ctrl+Y</strong> undo &amp; redo shifts.<br>
+                <strong>⬜ Select Mode</strong> bulk-fills multiple cells at once.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Stats toggle -->
+<div class="no-print" style="margin-bottom:8px; padding:0 4px;">
+    <label style="cursor:pointer; font-size:13px; font-weight:bold; color:#34495e;">
+        <input type="checkbox" id="statsToggle" onchange="toggleStatsPanel()">
+        📊 Show Worker Stats Panel
+    </label>
+</div>
+
+<!-- Main Table -->
+<div class="panel table-wrapper">
+    <table id="scheduleTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot id="tableFoot" class="no-print"></tfoot>
+    </table>
+</div>
+
+<!-- Stats Panel (shown when checkbox ticked) -->
+<div id="statsPanel">
+    <h2 style="margin-top:0; color:#34495e;">📊 <span id="statsTitle">Worker Statistics</span> — <span id="statsMonthLabel"></span></h2>
+    <div id="statsContent"></div>
+</div>
+
+<!-- Selection Bar (fixed bottom, shown in select mode) -->
+<div id="selectionBar">
+    <span id="selModeLabel" style="font-weight:bold; font-size:14px; white-space:nowrap;">⬜ Select Mode</span>
+    <span style="white-space:nowrap;"><strong id="selectionCount" style="color:#f39c12; font-size:16px;">0</strong> <span id="selCellsLabel">cells selected</span></span>
+    <select id="bulkShiftSelect">
+        <option value="-">- (Clear)</option>
+        <optgroup label="Immo"><option value="ImE">ImE</option><option value="ImL">ImL</option></optgroup>
+        <optgroup label="Shifts">
+            <option value="13H">13H</option><option value="8E">8E</option>
+            <option value="8L">8L</option><option value="8M">8M</option><option value="6H">6H</option>
+        </optgroup>
+        <optgroup label="IR2">
+            <option value="8E-IR2">8E-IR2</option><option value="8M-IR2">8M-IR2</option>
+            <option value="8L-IR2">8L-IR2</option><option value="13H-IR2">13H-IR2</option>
+        </optgroup>
+        <optgroup label="IR3">
+            <option value="8E-IR3">8E-IR3</option><option value="8M-IR3">8M-IR3</option>
+            <option value="8L-IR3">8L-IR3</option><option value="13H-IR3">13H-IR3</option>
+        </optgroup>
+        <optgroup label="IR4">
+            <option value="8E-IR4">8E-IR4</option><option value="8M-IR4">8M-IR4</option>
+            <option value="8L-IR4">8L-IR4</option><option value="13H-IR4">13H-IR4</option>
+        </optgroup>
+        <optgroup label="Immo-Room">
+            <option value="8E-Immo">8E-Immo</option><option value="8L-Immo">8L-Immo</option>
+        </optgroup>
+        <optgroup label="Special">
+            <option value="OFF">OFF</option><option value="VAC">VAC</option><option value="SICK">SICK</option>
+            <option value="FB">FB</option><option value="LSS">LSS</option><option value="Offc">Offc</option>
+            <option value="RB1">RB1</option><option value="RB2">RB2</option><option value="DF">DF</option>
+            <option value="Urlaub IR">Urlaub IR</option><option value="Urlaub-ZA">Urlaub-ZA</option><option value="U-Immo">U-Immo</option>
+        </optgroup>
+    </select>
+    <button id="btnApplyBulk"  onclick="applyBulkShift()"  style="background:#e67e22;">✔ Apply to All Selected</button>
+    <button id="btnClearSel"   onclick="clearSelection()"  style="background:#7f8c8d;">✖ Clear Selection</button>
+    <button id="btnExitSel"    onclick="toggleSelectMode()" style="background:#c0392b;">✖ Exit</button>
+</div>
+
+<!-- Edit Worker Modal -->
+<div id="editWorkerModal" class="modal">
+    <div class="modal-content" style="max-width:520px;">
+        <span class="close-btn" onclick="closeEditModal()">&times;</span>
+        <h2 style="color:#0056b3;">✏️ Edit Worker</h2>
+        <div style="font-size:13px;">
+            <div class="form-group" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <div><label style="font-size:11px; display:block; margin-bottom:2px;">Name</label>
+                    <input type="text" id="editName" style="width:90px; font-weight:bold;"></div>
+                <div><label style="font-size:11px; display:block; margin-bottom:2px;">System</label>
+                    <select id="editSystem"><option value="New">New</option><option value="Old">Old</option></select></div>
+                <div><label style="font-size:11px; display:block; margin-bottom:2px;">Contract</label>
+                    <select id="editContract" onchange="editToggle22h()">
+                        <option value="40">40h</option><option value="32">32h</option>
+                        <option value="24">24h</option><option value="22">22h</option>
+                    </select></div>
+                <div><label style="font-size:11px; display:block; margin-bottom:2px;">Preference</label>
+                    <select id="editPref">
+                        <option value="Any">Mixed</option><option value="Early">Early Only</option><option value="Late">Late Only</option>
+                    </select></div>
+                <div><label style="font-size:11px; display:block; margin-bottom:2px;">Immo Type</label>
+                    <select id="editImmo" onchange="editToggleImmo()">
+                        <option value="None">Standard</option><option value="Fixed">Fixed Immo</option><option value="Jump">Jump-in</option>
+                    </select></div>
+            </div>
+
+            <!-- Fixed Immo sub-options -->
+            <div id="editRowImmo" style="display:none; background:#e8f4fc; padding:8px; border-radius:4px; border:1px solid #aed6f1; margin-bottom:8px; font-size:12px;">
+                <label><strong>🏥 Immo Shift Preference:</strong></label><br>
+                <select id="editImmoPref" onchange="editToggleImmoRatio()" style="margin-top:4px; font-weight:bold; width:100%;">
+                    <option value="Mixed">Mixed — both ImE &amp; ImL</option>
+                    <option value="ImE">ImE Only — always 07:00–15:30</option>
+                    <option value="ImL">ImL Only — always 08:00–16:30</option>
+                </select>
+                <div id="editRowImmoRatio" style="margin-top:6px;">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <span>ImE share:</span>
+                        <input type="range" id="editImmoRatio" min="10" max="90" value="60" step="10"
+                            style="flex:1;" oninput="document.getElementById('editImmoRatioLabel').textContent=this.value+'% ImE'">
+                        <span id="editImmoRatioLabel" style="font-weight:bold; color:#1a5276; min-width:55px;">60% ImE</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 22h sub-options -->
+            <div id="editRow22h" style="display:none; background:#e8f8f0; padding:8px; border-radius:4px; border:1px solid #a9dfbf; margin-bottom:8px; font-size:12px;">
+                <label><strong>📅 Fixed 6H Day (07:00–13:00):</strong></label><br>
+                <select id="edit6HDay" style="margin-top:4px; font-weight:bold; width:100%;">
+                    <option value="1">Monday</option><option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label><strong>Fixed Days Off:</strong></label>
+                <div class="checkbox-group" id="editFixedOffCheckboxes">
+                    <label><input type="checkbox" value="1">Mo</label>
+                    <label><input type="checkbox" value="2">Tu</label>
+                    <label><input type="checkbox" value="3">We</label>
+                    <label><input type="checkbox" value="4">Th</label>
+                    <label><input type="checkbox" value="5">Fr</label>
+                    <label><input type="checkbox" value="6">Sa</label>
+                    <label><input type="checkbox" value="0">Su</label>
+                </div>
+            </div>
+
+            <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:4px; padding:8px; font-size:11px; color:#856404; margin-bottom:10px;">
+                ⚠️ Changing the contract or preference takes effect on the <strong>next Auto-Fill</strong> run. Existing shifts in the table are not automatically changed.
+            </div>
+
+            <div style="display:flex; gap:8px;">
+                <button onclick="saveEditWorker()" style="flex:1; background:#0056b3; color:white; padding:10px; font-size:14px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">💾 Save Changes</button>
+                <button onclick="closeEditModal()" style="background:#6c757d; color:white; padding:10px; font-size:13px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Month Diff Modal -->
+<div id="monthDiffModal" class="modal">
+    <div class="modal-content" style="max-width:860px;">
+        <span class="close-btn" onclick="document.getElementById('monthDiffModal').style.display='none'">&times;</span>
+        <h2 style="color:#2980b9;">📆 Month Comparison</h2>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px;">
+            <div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Worker</label>
+                <select id="diffWorkerSelect" style="font-weight:bold; padding:6px; min-width:140px;"></select>
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Month A</label>
+                <input type="month" id="diffMonthA" style="padding:6px;">
+            </div>
+            <div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Month B</label>
+                <input type="month" id="diffMonthB" style="padding:6px;">
+            </div>
+            <button onclick="renderMonthDiff()" style="background:#2980b9; color:white; padding:8px 16px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Compare →</button>
+        </div>
+        <div id="diffContent" style="font-size:12px; overflow-x:auto;"></div>
+    </div>
+</div>
+
+<!-- AI Modal -->
+<div id="aiModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('aiModal').style.display='none'">&times;</span>
+        <h2>🤖 AI Schedule Analysis</h2>
+        <div id="aiReportContent" style="line-height:1.6; font-size:14px;"></div>
+    </div>
+</div>
+
+<!-- Personal Export Modal -->
+<div id="personalModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('personalModal').style.display='none'">&times;</span>
+        <h2 style="color:#27ae60;">📱 Export Personal Schedule</h2>
+        <p>Select a worker to generate a clean text schedule for WhatsApp or Email.</p>
+        <select id="personalWorkerSelect" onchange="generatePersonalText()" style="width:100%; padding:8px; margin-bottom:10px; font-weight:bold;"></select>
+        <textarea id="personalTextArea" style="width:100%; height:250px; font-family:monospace; padding:10px; border-radius:5px; border:1px solid #ccc;"></textarea>
+        <button class="btn-auto" onclick="copyPersonalText()" style="width:100%; margin-top:10px;">📋 Copy Text to Clipboard</button>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('helpModal').style.display='none'">&times;</span>
+        <h2 id="helpTitle" style="color:#0056b3;">📖 A to Z User Guide — v4</h2>
+        <div id="helpContent" style="line-height:1.6; font-size:13px;"></div>
+
+<!-- LSS Day Modal -->
+<div id="lssModal" class="modal">
+    <div class="modal-content" style="max-width:460px;">
+        <span class="close-btn" onclick="closeLSSModal()">&times;</span>
+        <h2 style="color:#34495e;">📋 LSS Day — Select Workers</h2>
+        <p id="lssModalDayLabel" style="font-size:13px; color:#555; margin-bottom:6px;"></p>
+        <p style="font-size:11px; color:#888; margin-bottom:8px;">
+            Immo (Fixed) workers are <strong>unchecked by default</strong> — they keep their Immo shifts.<br>
+            Tick any worker who should receive <strong>LSS</strong> on this day.
+        </p>
+        <div id="lssWorkerList" style="max-height:280px; overflow-y:auto; border:1px solid #ddd; border-radius:4px; padding:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px;"></div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+            <button onclick="applyLSSModal()" style="flex:1; background:#34495e; color:white; padding:9px; font-size:13px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">✔ Apply LSS</button>
+            <button onclick="removeLSSModal()" style="flex:1; background:#dc3545; color:white; padding:9px; font-size:13px; border:none; border-radius:4px; cursor:pointer;">✖ Remove LSS</button>
+            <button onclick="closeLSSModal()" style="background:#6c757d; color:white; padding:9px; font-size:13px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Hours Modal -->
+<div id="customHoursModal" class="modal">
+    <div class="modal-content" style="max-width:380px;">
+        <span class="close-btn" onclick="closeCustomHoursModal()">&times;</span>
+        <h2 style="color:#6c3483;">⏰ Custom Shift Hours</h2>
+        <input type="hidden" id="cusWorkerIdx">
+        <input type="hidden" id="cusDayIdx">
+        <div style="display:flex; gap:16px; align-items:center; margin:14px 0 10px 0;">
+            <div>
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Start Time</label>
+                <input type="time" id="cusStartTime" value="07:00" oninput="updateCusOverlapInfo()" style="font-size:15px; padding:6px; width:120px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="font-size:22px; color:#aaa; padding-top:18px;">→</div>
+            <div>
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">End Time</label>
+                <input type="time" id="cusEndTime" value="15:30" oninput="updateCusOverlapInfo()" style="font-size:15px; padding:6px; width:120px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+        </div>
+        <div id="cusOverlapInfo" style="font-size:12px; background:#f8f9fa; border-radius:4px; padding:8px; margin-bottom:12px; color:#555; min-height:44px;"></div>
+        <div style="display:flex; gap:8px;">
+            <button onclick="applyCustomHours()" style="flex:1; background:#6c3483; color:white; padding:9px; font-size:13px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">✔ Set Custom Shift</button>
+            <button onclick="closeCustomHoursModal()" style="background:#6c757d; color:white; padding:9px; font-size:13px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+let currentYear, currentMonth, daysInMonth, currentMonthKey;
+let allMonthsData = {};
+let workers      = [];
+let holidays     = [];
+let lssDays      = [];
+let dailyComments = [];
+let dailyTargets  = [];
+let masterTargets = { wd8E:4, wd8M:2, wd8L:4, wd13:2, wd6:1, we8E:0, we8M:0, we8L:0, we13:0, we6:0,
+                      wdImE:2, wdImL:1 };
+let use13H = false;  // toggled via "Enable 13H" checkbox in Setup panel
+let use6H  = false;  // toggled via "Enable 6H"  checkbox in Setup panel
+let currentLang = 'en'; // 'en' or 'de'
+
+// Select-mode state
+let selectMode    = false;
+let selectedCells = new Set();   // "wIndex_dIndex"
+
+// ── Undo / Redo ──
+const UNDO_LIMIT = 20;
+let undoStack = [];
+let redoStack = [];
+
+function snapshotState() {
+    return JSON.stringify({ workers: workers.map(w => ({ ...w, shifts: [...w.shifts], requests: [...w.requests] })), dailyComments: [...dailyComments] });
+}
+
+function pushUndo() {
+    undoStack.push(snapshotState());
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    redoStack = [];
+    updateUndoButtons();
+}
+
+function updateUndoButtons() {
+    const uBtn = document.getElementById('undoBtn');
+    const rBtn = document.getElementById('redoBtn');
+    if (uBtn) uBtn.disabled = undoStack.length === 0;
+    if (rBtn) rBtn.disabled = redoStack.length === 0;
+}
+
+function applySnapshot(snap) {
+    const s = JSON.parse(snap);
+    // Restore shifts & comments; preserve worker metadata
+    s.workers.forEach((sw, i) => {
+        if (workers[i]) { workers[i].shifts = sw.shifts; workers[i].requests = sw.requests; }
+    });
+    dailyComments = s.dailyComments;
+}
+
+function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push(snapshotState());
+    applySnapshot(undoStack.pop());
+    updateUndoButtons();
+    saveData(); renderTable();
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(snapshotState());
+    applySnapshot(redoStack.pop());
+    updateUndoButtons();
+    saveData(); renderTable();
+}
+
+const shiftHours = {
+    "-":0,"13H":13,"8E":8,"8L":8,"8M":8,"6H":6,"OFF":0,"VAC":8,"SICK":8,"FB":8,
+    "DF":0,"Urlaub IR":8,"Urlaub-ZA":8,"U-Immo":8,"LSS":8,"Offc":8,
+    "RB1":0,"RB2":0,"ImE":8,"ImL":8,"8H-ANY":8,"8L-ANY":8
+};
+const workShifts    = ["13H","8E","8L","8M","6H","FB","LSS","Offc","ImE","ImL","CUS"];
+const morningShifts = ["13H","8E","6H","Offc","FB","ImE","ImL"];
+const dayNames      = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// ─────────────────────────────────────────────────────────
+//  BUG-FIX #1 — getBaseShift: 'U-Immo'.split('-')[0] = 'U'
+// ─────────────────────────────────────────────────────────
+function getBaseShift(shift) {
+    if (!shift || shift === '-') return '-';
+    if (shift === 'U-Immo') return 'U-Immo';
+    if (shift.startsWith('CUS')) return 'CUS';
+    if (shift.includes('-IR') || shift.includes('-Immo')) return shift.split('-')[0];
+    return shift;
+}
+
+// Returns hours for any shift including custom CUS-HH:MM-HH:MM
+function getShiftHours(shift) {
+    const base = getBaseShift(shift);
+    if (base === 'CUS') {
+        const m = shift.match(/CUS-(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
+        if (m) return Math.max(0, ((parseInt(m[3])*60+parseInt(m[4])) - (parseInt(m[1])*60+parseInt(m[2]))) / 60);
+        return 8;
+    }
+    return shiftHours[base] || 0;
+}
+
+// For a CUS shift returns { early, late, star }
+// early = starts ≤ noon, late = ends ≥ 14:00 — if both, show ★ and count in both buckets
+function cusOverlap(shift) {
+    const m = shift.match(/CUS-(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
+    if (!m) return { early:true, late:false, star:false, label:'CUS' };
+    const sh = parseInt(m[1]), sm = parseInt(m[2]);
+    const eh = parseInt(m[3]), em = parseInt(m[4]);
+    const early = sh < 12 || (sh===12 && sm===0);
+    const late  = eh > 14 || (eh===14 && em===0);
+    const star  = early && late;
+    const hrs   = Math.max(0, (eh*60+em - sh*60-sm)/60).toFixed(1);
+    return { early, late, star, label:`${m[1]}:${m[2]}–${m[3]}:${m[4]} (${hrs}h)` };
+}
+
+function getColor(shift) {
+    const b = getBaseShift(shift);
+    if (b==='13H')   return '#ffe599';
+    if (b==='8E')    return '#cfe2f3';
+    if (b==='8L')    return '#f4cccc';
+    if (b==='8M')    return '#f9cb9c';
+    if (b==='6H')    return '#d9ead3';
+    if (b==='ImE')   return '#a2c4c9';
+    if (b==='ImL')   return '#76a5af';
+    if (b==='OFF'||b==='DF') return '#e0e0e0';
+    if (b==='VAC'||b==='Urlaub IR'||b==='Urlaub-ZA'||b==='U-Immo') return '#d0a9f5';
+    if (b==='SICK')  return '#f5b7b1';
+    if (b==='FB')    return '#9fc5e8';
+    if (b==='LSS')   return '#d9d9d9';
+    if (b==='Offc')  return '#b6d7a8';
+    if (b==='CUS')   return '#e8d5f5';
+    if (b==='RB1'||b==='RB2') return '#fce5cd';
+    return '#ffffff';
+}
+
+function getContinuousWeek(year, month, dayIndex) {
+    const d     = new Date(year, month-1, dayIndex+1);
+    const epoch = new Date(1970, 0, 5);
+    return Math.floor((d - epoch) / 604800000);
+}
+
+function getEaster(year) {
+    let a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,
+        f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+        h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+        l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+        mo=Math.floor((h+l-7*m+114)/31),
+        dy=((h+l-7*m+114)%31)+1;
+    return new Date(year, mo-1, dy);
+}
+
+// Returns array of {d: dayIndex, name: string}
+function getAustrianHolidays(year, month) {
+    const hols = [];
+    const add = (m, day, name) => {
+        if (m === month) hols.push({ d: day-1, name });
+    };
+    add(1,  1,  'Neujahr');
+    add(1,  6,  'Heilige Drei Könige');
+    add(5,  1,  'Staatsfeiertag');
+    add(8,  15, 'Mariä Himmelfahrt');
+    add(10, 26, 'Nationalfeiertag');
+    add(11, 1,  'Allerheiligen');
+    add(12, 8,  'Mariä Empfängnis');
+    add(12, 25, '1. Weihnachtstag');
+    add(12, 26, '2. Weihnachtstag');
+
+    const easter = getEaster(year);
+    const dyn = (offset, name) => {
+        const d2 = new Date(easter);
+        d2.setDate(d2.getDate() + offset);
+        if (d2.getMonth()+1 === month) hols.push({ d: d2.getDate()-1, name });
+    };
+    dyn(1,  'Ostermontag');
+    dyn(39, 'Christi Himmelfahrt');
+    dyn(50, 'Pfingstmontag');
+    dyn(60, 'Fronleichnam');
+    return hols;
+}
+
+// Returns just the day-indices array (for backwards-compat)
+function holidayIndices() { return holidays.map(h => h.d !== undefined ? h.d : h); }
+
+// Get holiday name for a day index (or '' if none)
+function isHoliday(dIndex) {
+    return holidays.some(h => (h.d !== undefined ? h.d : h) === dIndex);
+}
+
+function getHolidayName(dIndex) {
+    const h = holidays.find(h => (h.d !== undefined ? h.d : h) === dIndex);
+    return h && h.name ? h.name : '';
+}
+
+// ─────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────
+window.onload = () => {
+    allMonthsData = JSON.parse(localStorage.getItem('shiftPlannerAllMonthsV23')) || {};
+    // v4→v5 migration: force use13H/use6H to false in all saved months
+    // (old versions defaulted them to true; new default is false)
+    if (!localStorage.getItem('shiftPlannerV5migrated')) {
+        Object.keys(allMonthsData).forEach(k => {
+            allMonthsData[k].use13H = false;
+            allMonthsData[k].use6H  = false;
+        });
+        localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+        localStorage.setItem('shiftPlannerV5migrated', '1');
+    }
+
+    // V22 → V23 migration
+    const old22 = localStorage.getItem('shiftPlannerAllMonthsV22');
+    if (old22 && Object.keys(allMonthsData).length===0) {
+        const parsed = JSON.parse(old22);
+        for (const key in parsed) {
+            parsed[key].masterTargets = masterTargets;
+            parsed[key].dailyTargets  = [];
+            allMonthsData[key] = parsed[key];
+        }
+        localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+    }
+
+    if (!document.getElementById('monthPicker').value) {
+        const t = new Date();
+        document.getElementById('monthPicker').value =
+            `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    // ── Keyboard navigation (Arrow keys between dropdowns) ──
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+Z undo, Ctrl+Y or Ctrl+Shift+Z redo
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key==='z') { e.preventDefault(); undo(); return; }
+        if ((e.ctrlKey || e.metaKey) && (e.key==='y' || (e.shiftKey && e.key==='z'))) { e.preventDefault(); redo(); return; }
+
+        const el = document.activeElement;
+        if (!el || !el.classList.contains('shift-select')) return;
+        const w = parseInt(el.dataset.w);
+        const d = parseInt(el.dataset.d);
+        let nw=w, nd=d;
+        if      (e.key==='ArrowRight') { nd=d+1; e.preventDefault(); }
+        else if (e.key==='ArrowLeft')  { nd=d-1; e.preventDefault(); }
+        else if (e.key==='ArrowDown')  { nw=w+1; e.preventDefault(); }
+        else if (e.key==='ArrowUp')    { nw=w-1; e.preventDefault(); }
+        else return;
+        if (nd>=0 && nd<daysInMonth && nw>=0 && nw<workers.length) {
+            const tgt = document.querySelector(`.shift-select[data-w="${nw}"][data-d="${nd}"]`);
+            if (tgt) tgt.focus();
+        }
+    });
+
+    populateYearDropdown();
+    const t = new Date();
+    const initKey = document.getElementById('monthPicker').value ||
+        `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
+    syncDropdownsToKey(initKey);
+    document.getElementById('monthPicker').value = initKey;
+    changeMonth(true);
+    if (currentLang === 'de') applyLang();
+    updateFieldGuide();
+};
+
+// ─────────────────────────────────────────────────────────
+//  Data — load / save
+// ─────────────────────────────────────────────────────────
+function loadMonthData(monthKey) {
+    if (allMonthsData[monthKey]) {
+        const saved = allMonthsData[monthKey];
+        workers  = saved.workers  || [];
+        holidays = (saved.holidays || []).map(h => {
+            if (typeof h === 'number') {
+                // legacy numeric index — reconstruct with name from AT holiday list
+                const named = getAustrianHolidays(currentYear, currentMonth).find(x => x.d === h);
+                return named || { d: h, name: '' };
+            }
+            return h;
+        });
+        lssDays  = saved.lssDays  || [];
+
+        // BUG-FIX #2 — guard against length mismatch after month-count change
+        dailyComments = (saved.dailyComments && saved.dailyComments.length===daysInMonth)
+            ? saved.dailyComments
+            : Array(daysInMonth).fill('');
+
+        workers.forEach(w => w.requests = w.requests || Array(daysInMonth).fill(false));
+
+        if (saved.masterTargets && saved.masterTargets.wd8E !== undefined) {
+            masterTargets = saved.masterTargets;
+            // Backfill Immo targets if loading an older save that didn't have them
+            if (masterTargets.wdImE === undefined) masterTargets.wdImE = 2;
+            if (masterTargets.wdImL === undefined) masterTargets.wdImL = 1;
+            const map = { mstWd8E:'wd8E', mstWd8M:'wd8M', mstWd8L:'wd8L', mstWd13:'wd13', mstWd6:'wd6',
+                          mstWe8E:'we8E', mstWe8M:'we8M', mstWe8L:'we8L', mstWe13:'we13', mstWe6:'we6',
+                          mstWdImE:'wdImE', mstWdImL:'wdImL' };
+            Object.keys(map).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = masterTargets[map[id]];
+            });
+        }
+
+        dailyTargets = saved.dailyTargets || [];
+        if (dailyTargets.length !== daysInMonth) initTargets();
+
+        if (saved.maxVac    !== undefined) document.getElementById('maxVacation').value    = saved.maxVac;
+        if (saved.maxConsec !== undefined) document.getElementById('maxConsecutive').value  = saved.maxConsec;
+        if (saved.minStaff  !== undefined) document.getElementById('minStaff').value        = saved.minStaff;
+        if (saved.use13H !== undefined) {
+            use13H = saved.use13H;
+            const chk = document.getElementById('toggle13H');
+            if (chk) chk.checked = use13H;
+            ['wd13wrap','we13wrap'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.opacity = use13H ? '1' : '0.35';
+            });
+        }
+        if (saved.use6H !== undefined) {
+            use6H = saved.use6H;
+            const chk6 = document.getElementById('toggle6H');
+            if (chk6) chk6.checked = use6H;
+        }
+        if (saved.currentLang) {
+            currentLang = saved.currentLang;
+        }
+    } else {
+        if (workers.length===0) loadTestWorkers();
+        else workers.forEach(w => {
+            w.shifts   = Array(daysInMonth).fill('-');
+            w.requests = Array(daysInMonth).fill(false);
+        });
+        holidays     = getAustrianHolidays(currentYear, currentMonth);
+        lssDays      = [];
+        dailyComments = Array(daysInMonth).fill('');
+        initTargets();
+        // New month with no saved data — apply defaults
+        use13H = false; use6H = false;
+        const chk13 = document.getElementById('toggle13H');
+        const chk6  = document.getElementById('toggle6H');
+        if (chk13) chk13.checked = false;
+        if (chk6)  chk6.checked  = false;
+        ['wd13wrap','we13wrap'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.opacity = '0.35';
+        });
+    }
+}
+
+function initTargets() {
+    dailyTargets = [];
+    for (let d=0; d<daysInMonth; d++) {
+        const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+        const isWE = (dow===0 || dow===6 || isHoliday(d));
+        dailyTargets.push({
+            t8E:  isWE ? masterTargets.we8E : masterTargets.wd8E,
+            t8M:  isWE ? masterTargets.we8M : masterTargets.wd8M,
+            t8L:  isWE ? masterTargets.we8L : masterTargets.wd8L,
+            t13:  isWE ? masterTargets.we13 : masterTargets.wd13,
+            t6:   isWE ? masterTargets.we6  : masterTargets.wd6,
+            tImE: isWE ? 0 : masterTargets.wdImE,   // Immo = weekdays only
+            tImL: isWE ? 0 : masterTargets.wdImL
+        });
+    }
+}
+
+function loadTestWorkers() {
+    workers = [];
+    // No demo workers — add your real team using the Add Worker panel above.
+}
+
+function toggle13HShift() {
+    use13H = document.getElementById('toggle13H').checked;
+    ['wd13wrap','we13wrap'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.opacity = use13H ? '1' : '0.35';
+    });
+    saveData(); renderTable();
+}
+
+function toggle6HShift() {
+    use6H = document.getElementById('toggle6H').checked;
+    saveData(); renderTable();
+}
+
+function saveMasterTargets() {
+    const map = { mstWd8E:'wd8E', mstWd8M:'wd8M', mstWd8L:'wd8L', mstWd13:'wd13', mstWd6:'wd6',
+                  mstWe8E:'we8E', mstWe8M:'we8M', mstWe8L:'we8L', mstWe13:'we13', mstWe6:'we6',
+                  mstWdImE:'wdImE', mstWdImL:'wdImL' };
+    Object.keys(map).forEach(id => masterTargets[map[id]] = parseInt(document.getElementById(id).value) || 0);
+
+    if (confirm('Update the whole month with these new Default Targets? (Manual overrides will be reset)')) {
+        initTargets(); saveData(); renderTable();
+    } else { saveData(); }
+}
+
+function saveData() {
+    const maxVac    = parseInt(document.getElementById('maxVacation').value)    || 0;
+    const maxConsec = parseInt(document.getElementById('maxConsecutive').value) || 5;
+    const minStaff  = parseInt(document.getElementById('minStaff').value)       || 0;
+    allMonthsData[currentMonthKey] = {
+        workers, holidays, lssDays, dailyComments, dailyTargets,
+        masterTargets, monthValue:currentMonthKey, maxVac, maxConsec, minStaff, use13H, use6H, currentLang
+    };
+    localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+}
+
+function populateYearDropdown() {
+    const sel = document.getElementById('monthPickerYear');
+    if (!sel) return;
+    const cur = sel.value ? parseInt(sel.value) : new Date().getFullYear();
+    sel.innerHTML = '';
+    for (let y = cur - 3; y <= cur + 3; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === cur) opt.selected = true;
+        sel.appendChild(opt);
+    }
+}
+
+function syncDropdownsToKey(key) {
+    if (!key) return;
+    const [y, m] = key.split('-').map(Number);
+    const mSel = document.getElementById('monthPickerMonth');
+    const ySel = document.getElementById('monthPickerYear');
+    if (mSel) mSel.value = m;
+    // Ensure year is in dropdown
+    if (ySel) {
+        if (![...ySel.options].some(o => parseInt(o.value) === y)) {
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = y;
+            ySel.appendChild(opt);
+            [...ySel.options].sort((a,b) => a.value-b.value).forEach(o => ySel.appendChild(o));
+        }
+        ySel.value = y;
+    }
+    document.getElementById('monthPicker').value = key;
+}
+
+function changeMonthFromDropdowns() {
+    const m = document.getElementById('monthPickerMonth').value;
+    const y = document.getElementById('monthPickerYear').value;
+    if (!m || !y) return;
+    const key = `${y}-${String(m).padStart(2,'0')}`;
+    document.getElementById('monthPicker').value = key;
+    changeMonth();
+}
+
+function changeMonth(isInit=false) {
+    if (!isInit && workers.length>0) saveData();
+    currentMonthKey = document.getElementById('monthPicker').value;
+    if (!currentMonthKey) return;
+    syncDropdownsToKey(currentMonthKey);
+    [currentYear, currentMonth] = currentMonthKey.split('-').map(Number);
+    daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    loadMonthData(currentMonthKey);
+    saveData();
+    renderTable();
+}
+
+function refreshBoard() { saveData(); renderTable(); }
+
+function getPrevMonthLastDays(workerName, numDays) {
+    const pd = new Date(currentYear, currentMonth-2, 1);
+    const pY = pd.getFullYear(), pM = pd.getMonth()+1;
+    const pKey = `${pY}-${String(pM).padStart(2,'0')}`;
+    if (allMonthsData[pKey]) {
+        const w = allMonthsData[pKey].workers.find(x => x.name===workerName);
+        if (w && w.shifts) {
+            const dInPrev = new Date(pY, pM, 0).getDate();
+            return w.shifts.slice(dInPrev - numDays);
+        }
+    }
+    return Array(numDays).fill('-');
+}
+
+function updateDailyTarget(dIndex, type, value) {
+    dailyTargets[dIndex][type] = parseInt(value) || 0;
+    saveData(); renderTable();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Workers — CRUD
+// ─────────────────────────────────────────────────────────
+function toggle22hOptions() {
+    const is22 = document.getElementById('workerContract').value === '22';
+    document.getElementById('row22h').style.display = is22 ? 'block' : 'none';
+}
+
+function toggleImmoOptions() {
+    const isFixed = document.getElementById('workerImmo').value === 'Fixed';
+    document.getElementById('rowImmo').style.display = isFixed ? 'block' : 'none';
+    toggleImmoRatio();
+}
+
+function toggleImmoRatio() {
+    const isMixed = document.getElementById('workerImmoPref').value === 'Mixed';
+    document.getElementById('rowImmoRatio').style.display = isMixed ? 'block' : 'none';
+}
+
+function updateImmoRatioLabel() {
+    const pct = document.getElementById('workerImmoRatio').value;
+    document.getElementById('immoRatioLabel').textContent = `${pct}% ImE`;
+    document.querySelector('#rowImmoRatio small').textContent = `Remaining ${100 - pct}% will be ImL`;
+}
+
+function addWorkerFromForm() {
+    const name = document.getElementById('workerName').value.toUpperCase();
+    if (!name) return alert('Please enter a worker name.');
+    const fixedOff = [];
+    document.querySelectorAll('#fixedOffCheckboxes input:checked').forEach(cb => fixedOff.push(parseInt(cb.value)));
+    const contract = document.getElementById('workerContract').value;
+    const immo     = document.getElementById('workerImmo').value;
+    const fixed6HDay = contract === '22'
+        ? parseInt(document.getElementById('worker6HDay').value)
+        : null;
+    const immoShiftPref = immo === 'Fixed'
+        ? document.getElementById('workerImmoPref').value
+        : null;
+    const immoEarlyPct = (immo === 'Fixed' && immoShiftPref === 'Mixed')
+        ? parseInt(document.getElementById('workerImmoRatio').value)
+        : null;
+    workers.push({
+        name,
+        system:   document.getElementById('workerSystem').value,
+        contract,
+        pref:     document.getElementById('workerPref').value,
+        immo,
+        immoShiftPref,
+        immoEarlyPct,
+        fixedOff,
+        fixed6HDay,
+        shifts:   Array(daysInMonth).fill('-'),
+        requests: Array(daysInMonth).fill(false)
+    });
+    document.getElementById('workerName').value = '';
+    saveData(); renderTable();
+}
+
+function deleteWorker(index) {
+    if (confirm(`Remove ${workers[index].name}?`)) { workers.splice(index,1); saveData(); renderTable(); }
+}
+
+function clearAllWorkers() {
+    if (workers.length === 0) return alert('No workers to remove.');
+    if (!confirm(`Remove all ${workers.length} workers and clear all shifts for this month?\nThis cannot be undone.`)) return;
+    workers = [];
+    lssDays = [];
+    dailyComments = Array(daysInMonth).fill('');
+    saveData(); renderTable();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Edit Worker Modal
+// ─────────────────────────────────────────────────────────
+let editingWorkerIndex = null;
+
+function openEditModal(index) {
+    editingWorkerIndex = index;
+    const w = workers[index];
+
+    document.getElementById('editName').value         = w.name;
+    document.getElementById('editSystem').value       = w.system;
+    document.getElementById('editContract').value     = w.contract;
+    document.getElementById('editPref').value         = w.pref;
+    document.getElementById('editImmo').value         = w.immo;
+    document.getElementById('editImmoPref').value     = w.immoShiftPref  || 'Mixed';
+    document.getElementById('editImmoRatio').value    = w.immoEarlyPct   != null ? w.immoEarlyPct : 60;
+    document.getElementById('editImmoRatioLabel').textContent = (w.immoEarlyPct != null ? w.immoEarlyPct : 60) + '% ImE';
+    document.getElementById('edit6HDay').value        = w.fixed6HDay     != null ? w.fixed6HDay : 1;
+
+    // Fixed days off checkboxes
+    document.querySelectorAll('#editFixedOffCheckboxes input').forEach(cb => {
+        cb.checked = (w.fixedOff || []).includes(parseInt(cb.value));
+    });
+
+    editToggleImmo();
+    editToggle22h();
+    document.getElementById('editWorkerModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    editingWorkerIndex = null;
+    document.getElementById('editWorkerModal').style.display = 'none';
+}
+
+function editToggle22h() {
+    const is22 = document.getElementById('editContract').value === '22';
+    document.getElementById('editRow22h').style.display = is22 ? 'block' : 'none';
+}
+
+function editToggleImmo() {
+    const isFixed = document.getElementById('editImmo').value === 'Fixed';
+    document.getElementById('editRowImmo').style.display = isFixed ? 'block' : 'none';
+    editToggleImmoRatio();
+}
+
+function editToggleImmoRatio() {
+    const isMixed = document.getElementById('editImmoPref').value === 'Mixed';
+    document.getElementById('editRowImmoRatio').style.display = isMixed ? 'block' : 'none';
+}
+
+function saveEditWorker() {
+    if (editingWorkerIndex === null) return;
+    const w       = workers[editingWorkerIndex];
+    const contract = document.getElementById('editContract').value;
+    const immo     = document.getElementById('editImmo').value;
+    const immoPref = immo === 'Fixed' ? document.getElementById('editImmoPref').value : null;
+    const immoRatio = (immo === 'Fixed' && immoPref === 'Mixed')
+        ? parseInt(document.getElementById('editImmoRatio').value)
+        : null;
+    const fixed6HDay = contract === '22'
+        ? parseInt(document.getElementById('edit6HDay').value)
+        : null;
+    const fixedOff = [];
+    document.querySelectorAll('#editFixedOffCheckboxes input:checked').forEach(cb => fixedOff.push(parseInt(cb.value)));
+
+    // Apply all changes — shifts are preserved
+    w.name          = document.getElementById('editName').value.toUpperCase();
+    w.system        = document.getElementById('editSystem').value;
+    w.contract      = contract;
+    w.pref          = document.getElementById('editPref').value;
+    w.immo          = immo;
+    w.immoShiftPref = immoPref;
+    w.immoEarlyPct  = immoRatio;
+    w.fixed6HDay    = fixed6HDay;
+    w.fixedOff      = fixedOff;
+
+    closeEditModal();
+    saveData();
+    renderTable();
+}
+
+// ─────────────────────────────────────────────────────────
+//  Update Daily Target (inline inputs in table)
+// ─────────────────────────────────────────────────────────
+
+function updateShift(wIndex, dIndex, value) { pushUndo(); workers[wIndex].shifts[dIndex]=value; saveData(); renderTable(); }
+function updateRequest(wIndex, dIndex, isChecked) { workers[wIndex].requests[dIndex]=isChecked; saveData(); renderTable(); }
+function updateComment(dIndex, text) { dailyComments[dIndex]=text; saveData(); }
+
+function toggleHoliday(dIndex) {
+    if (isHoliday(dIndex)) {
+        holidays = holidays.filter(h => (h.d !== undefined ? h.d : h) !== dIndex);
+    } else {
+        const named = getAustrianHolidays(currentYear, currentMonth).find(x => x.d === dIndex);
+        holidays.push(named || { d: dIndex, name: '' });
+    }
+    initTargets(); saveData(); renderTable();
+}
+
+let lssModalDayIndex = null;
+
+function toggleLSS(dIndex) {
+    lssModalDayIndex = dIndex;
+    const dow      = new Date(currentYear, currentMonth-1, dIndex+1).getDay();
+    const isWE     = (dow===0||dow===6);
+    const isHol    = isHoliday(dIndex);
+    const dayLabel = `${dayNames[dow]} ${dIndex+1}.${currentMonth}.${currentYear}`;
+    document.getElementById('lssModalDayLabel').textContent =
+        `Day: ${dayLabel}${isWE?' (Weekend)':''}${isHol?' (Holiday)':''}`;
+
+    // Build worker checkbox list
+    let html = '';
+    workers.forEach((w, i) => {
+        const off       = w.fixedOff || [];
+        const hasFixOff = off.includes(dow);
+        const isImmo    = w.immo === 'Fixed';
+        const curIsLSS  = w.shifts[dIndex] === 'LSS';
+        // Default: checked if not weekend, not holiday, not fixedOff, not Fixed Immo
+        const defChecked = !isWE && !isHol && !hasFixOff && !isImmo;
+        const checked    = curIsLSS ? 'checked' : (defChecked && !lssDays.includes(dIndex) ? 'checked' : curIsLSS ? 'checked' : '');
+        const labelColor = isImmo ? '#d35400' : hasFixOff ? '#888' : '#222';
+        const badge      = isImmo ? ' <em style="font-size:10px; color:#d35400;">[Immo]</em>'
+                         : hasFixOff ? ' <em style="font-size:10px; color:#888;">[DayOff]</em>' : '';
+        html += `<label style="display:flex; align-items:center; gap:5px; font-size:12px; color:${labelColor}; padding:3px 0; cursor:pointer;">
+            <input type="checkbox" id="lssChk_${i}" ${checked}> ${w.name}${badge}
+        </label>`;
+    });
+    document.getElementById('lssWorkerList').innerHTML = html || '<em style="color:#aaa;">No workers added yet.</em>';
+    document.getElementById('lssModal').style.display = 'block';
+}
+
+function applyLSSModal() {
+    const d = lssModalDayIndex;
+    if (d === null) return;
+    pushUndo();
+    workers.forEach((w, i) => {
+        const chk = document.getElementById(`lssChk_${i}`);
+        if (!chk) return;
+        if (chk.checked) {
+            w.shifts[d] = 'LSS';
+        } else {
+            // Only clear if it was LSS (don't overwrite other shifts)
+            if (w.shifts[d] === 'LSS') w.shifts[d] = '-';
+        }
+    });
+    // Mark the day as LSS if any worker got it
+    const anyLSS = workers.some(w => w.shifts[d] === 'LSS');
+    if (anyLSS && !lssDays.includes(d)) lssDays.push(d);
+    else if (!anyLSS) lssDays = lssDays.filter(x => x !== d);
+    closeLSSModal();
+    saveData(); renderTable();
+}
+
+function removeLSSModal() {
+    const d = lssModalDayIndex;
+    if (d === null) return;
+    pushUndo();
+    workers.forEach(w => { if (w.shifts[d] === 'LSS') w.shifts[d] = '-'; });
+    lssDays = lssDays.filter(x => x !== d);
+    closeLSSModal();
+    saveData(); renderTable();
+}
+
+function closeLSSModal() {
+    document.getElementById('lssModal').style.display = 'none';
+    lssModalDayIndex = null;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Custom Hours Modal
+// ─────────────────────────────────────────────────────────
+function openCustomHoursModal(wIndex, dIndex) {
+    document.getElementById('cusWorkerIdx').value = wIndex;
+    document.getElementById('cusDayIdx').value    = dIndex;
+
+    // Pre-populate with current CUS values or shift defaults
+    const cur = workers[wIndex].shifts[dIndex];
+    const m   = cur ? cur.match(/CUS-(\d{2}:\d{2})-(\d{2}:\d{2})/) : null;
+    document.getElementById('cusStartTime').value = m ? m[1] : '07:00';
+    document.getElementById('cusEndTime').value   = m ? m[2] : '15:30';
+
+    updateCusOverlapInfo();
+    document.getElementById('customHoursModal').style.display = 'block';
+}
+
+function updateCusOverlapInfo() {
+    const s  = document.getElementById('cusStartTime').value;
+    const e  = document.getElementById('cusEndTime').value;
+    if (!s || !e) return;
+    const fakeShift = `CUS-${s}-${e}`;
+    const ov = cusOverlap(fakeShift);
+    const shM = parseInt(s.split(':')[0])*60 + parseInt(s.split(':')[1]);
+    const ehM = parseInt(e.split(':')[0])*60 + parseInt(e.split(':')[1]);
+    const hrs = ((ehM - shM) / 60).toFixed(1);
+    let info = `⏱ Duration: <strong>${hrs}h</strong> &nbsp;|&nbsp; `;
+    if (ov.star) {
+        info += `⭐ <strong>Spans both Early &amp; Late</strong> — counted in <em>both</em> shift buckets`;
+    } else if (ov.early) {
+        info += `🌅 Counts as <strong>Early shift</strong>`;
+    } else {
+        info += `🌆 Counts as <strong>Late shift</strong>`;
+    }
+    if (hrs <= 0) info = `<span style="color:red;">⚠ End time must be after start time</span>`;
+    document.getElementById('cusOverlapInfo').innerHTML = info;
+}
+
+function applyCustomHours() {
+    const wIndex = parseInt(document.getElementById('cusWorkerIdx').value);
+    const dIndex = parseInt(document.getElementById('cusDayIdx').value);
+    const s = document.getElementById('cusStartTime').value;
+    const e = document.getElementById('cusEndTime').value;
+    const shM = parseInt(s.split(':')[0])*60 + parseInt(s.split(':')[1]);
+    const ehM = parseInt(e.split(':')[0])*60 + parseInt(e.split(':')[1]);
+    if (ehM <= shM) { alert('End time must be after start time!'); return; }
+    pushUndo();
+    workers[wIndex].shifts[dIndex] = `CUS-${s}-${e}`;
+    closeCustomHoursModal();
+    saveData(); renderTable();
+}
+
+function closeCustomHoursModal() {
+    document.getElementById('customHoursModal').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────
+//  Select Mode
+// ─────────────────────────────────────────────────────────
+function toggleSelectMode() {
+    selectMode = !selectMode;
+    selectedCells.clear();
+    const btn     = document.getElementById('selectModeBtn');
+    const bar     = document.getElementById('selectionBar');
+    const wrapper = document.querySelector('.table-wrapper');
+    if (selectMode) {
+        btn.classList.add('active');
+        btn.textContent = '✔ Select Mode ON';
+        bar.classList.add('visible');
+        wrapper.classList.add('select-mode-active');
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = '⬜ Select Mode';
+        bar.classList.remove('visible');
+        wrapper.classList.remove('select-mode-active');
+        document.querySelectorAll('td.selected-cell').forEach(td => td.classList.remove('selected-cell'));
+    }
+    document.getElementById('selectionCount').textContent = 0;
+}
+
+function handleCellClick(e, wIndex, dIndex) {
+    if (!selectMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const key = `${wIndex}_${dIndex}`;
+    const td  = e.currentTarget;
+    if (selectedCells.has(key)) {
+        selectedCells.delete(key);
+        td.classList.remove('selected-cell');
+    } else {
+        selectedCells.add(key);
+        td.classList.add('selected-cell');
+    }
+    document.getElementById('selectionCount').textContent = selectedCells.size;
+}
+
+function applyBulkShift() {
+    if (selectedCells.size===0) return alert('No cells selected!');
+    pushUndo();
+    const shift = document.getElementById('bulkShiftSelect').value;
+    selectedCells.forEach(key => {
+        const [w,d] = key.split('_').map(Number);
+        workers[w].shifts[d] = shift;
+    });
+    selectedCells.clear();
+    document.getElementById('selectionCount').textContent = 0;
+    saveData(); renderTable();
+}
+
+function clearSelection() {
+    selectedCells.clear();
+    document.querySelectorAll('td.selected-cell').forEach(td => td.classList.remove('selected-cell'));
+    document.getElementById('selectionCount').textContent = 0;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Stats Panel
+// ─────────────────────────────────────────────────────────
+function toggleStatsPanel() {
+    const panel = document.getElementById('statsPanel');
+    if (document.getElementById('statsToggle').checked) {
+        panel.classList.add('visible');
+        renderStats();
+    } else {
+        panel.classList.remove('visible');
+    }
+}
+
+function renderStats() {
+    const maxConsec = parseInt(document.getElementById('maxConsecutive').value) || 5;
+    document.getElementById('statsMonthLabel').textContent =
+        new Date(currentYear, currentMonth-1, 1).toLocaleString('default', { month:'long', year:'numeric' });
+
+    const expectedMonthHrs = (hrs) => {
+        // rough expected: (contract / 5 weekdays) × workdays in month
+        const workdays = Array.from({length:daysInMonth}, (_,i) => {
+            const dow = new Date(currentYear, currentMonth-1, i+1).getDay();
+            return (dow!==0 && dow!==6 && !isHoliday(i)) ? 1 : 0;
+        }).reduce((a,b)=>a+b,0);
+        return Math.round((parseInt(hrs)/5) * workdays);
+    };
+
+    let rows = '';
+    workers.forEach(w => {
+        const totalHours = w.shifts.reduce((s,sh) => s + getShiftHours(sh), 0);
+        const earlyCount = w.shifts.filter(s => morningShifts.includes(getBaseShift(s))).length;
+        const lateCount  = w.shifts.filter(s => (use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL']).includes(getBaseShift(s))).length;
+        const vacCount   = w.shifts.filter(s => ['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(getBaseShift(s))).length;
+        const sickCount  = w.shifts.filter(s => getBaseShift(s)==='SICK').length;
+        const workDays   = w.shifts.filter(s => workShifts.includes(getBaseShift(s))).length;
+
+        let maxStreak=0, streak=0;
+        [...getPrevMonthLastDays(w.name, maxConsec+1), ...w.shifts].forEach(s => {
+            if (workShifts.includes(getBaseShift(s))) { streak++; maxStreak=Math.max(maxStreak,streak); }
+            else streak=0;
+        });
+
+        const exp  = expectedMonthHrs(w.contract);
+        const hCls = totalHours >= exp-8 ? 'stats-good' : totalHours >= exp-16 ? 'stats-warn' : 'stats-bad';
+        const cCls = maxStreak > maxConsec ? 'stats-bad' : maxStreak===maxConsec ? 'stats-warn' : '';
+        const ratio = workDays > 0 ? `${earlyCount}E / ${lateCount}L` : '—';
+        const immoLbl = w.immo!=='None' ? ` [${w.immo}]` : '';
+
+        rows += `<tr>
+            <td style="text-align:left; font-weight:bold;">${w.name}</td>
+            <td>${w.system} ${w.contract}h${immoLbl}</td>
+            <td class="${hCls}">${totalHours}h <small style="color:#999;">(~${exp}h exp.)</small></td>
+            <td>${workDays}</td>
+            <td>${ratio}</td>
+            <td>${vacCount  > 0 ? `<span style="color:#8e44ad; font-weight:bold;">${vacCount}</span>`  : '—'}</td>
+            <td>${sickCount > 0 ? `<span class="stats-bad">${sickCount}</span>`                        : '—'}</td>
+            <td class="${cCls}">${maxStreak}</td>
+        </tr>`;
+    });
+
+    document.getElementById('statsContent').innerHTML = `
+        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
+            <thead><tr>
+                <th style="text-align:left;">Worker</th><th>Contract</th>
+                <th>Total Hours</th><th>Work Days</th><th>Early / Late</th>
+                <th>Vacation</th><th>Sick</th><th>Max Consec.</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <p style="font-size:11px; color:#777; margin-top:8px;">
+            🟢 On track &nbsp;|&nbsp; 🟡 Review needed &nbsp;|&nbsp; 🔴 Violation / shortfall
+        </p>`;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Backup & Restore
+// ─────────────────────────────────────────────────────────
+function backupData() {
+    saveData();
+    const blob = new Blob([JSON.stringify(allMonthsData, null, 2)], { type:'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `ShiftPlanner_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function restoreData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            if (confirm(`Replace ALL current data with backup from "${file.name}"?\nThis cannot be undone.`)) {
+                allMonthsData = parsed;
+                localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+                changeMonth(true);
+                alert('✅ Restore successful!');
+            }
+        } catch {
+            alert('❌ Invalid backup file. Please select a valid .json backup.');
+        }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Dropdown HTML helper
+// ─────────────────────────────────────────────────────────
+function getDropdownOptions(currentShift) {
+    const base   = ["-","13H","8E","8L","8M","6H","OFF","VAC","SICK","FB","DF","Urlaub IR","Urlaub-ZA","U-Immo","LSS","Offc","RB1","RB2"];
+    const immo   = ["ImE","ImL"];
+    const rooms  = ["IR2","IR3","IR4","Immo"];
+    const rShifts = ["13H","8E","8L","8M","6H"];
+    let html = `<option value="-" ${currentShift==='-'?'selected':''}>-</option>`;
+    // CUS entry (shown in dropdown if currently set)
+    if (getBaseShift(currentShift)==='CUS') {
+        const ov = cusOverlap(currentShift);
+        html += `<option value="${currentShift}" selected>⏰ ${ov.label}${ov.star?' ★':''}</option>`;
+    }
+    html += `<optgroup label="Immo Shifts">`;
+    immo.forEach(s => html += `<option value="${s}" ${currentShift===s?'selected':''}>${s}</option>`);
+    html += `</optgroup><optgroup label="Base Shifts & Special">`;
+    base.forEach(s => { if(s!=='-') html += `<option value="${s}" ${currentShift===s?'selected':''}>${s}</option>`; });
+    html += `</optgroup>`;
+    rooms.forEach(room => {
+        html += `<optgroup label="${room} Assigned">`;
+        rShifts.forEach(s => {
+            const v = `${s}-${room}`;
+            html += `<option value="${v}" ${currentShift===v?'selected':''}>${v}</option>`;
+        });
+        html += `</optgroup>`;
+    });
+    return html;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Render Table
+// ─────────────────────────────────────────────────────────
+function renderTable() {
+    if (!currentYear) return;
+    const maxVac    = parseInt(document.getElementById('maxVacation').value)    || 0;
+    const maxConsec = parseInt(document.getElementById('maxConsecutive').value) || 5;
+
+    // ── Header ──
+    const hdrDate = currentLang==='de' ? 'Datum' : 'Date';
+    const hdrHol  = currentLang==='de' ? 'Ftg'   : 'Hol';
+    const hdrLSS  = 'LSS';
+    let headHTML = `<tr>
+        <th class="sticky-col">${hdrDate}</th>
+        <th class="sticky-col no-print">${hdrHol}</th>
+        <th class="sticky-col no-print">${hdrLSS}</th>`;
+
+    workers.forEach((w,i) => {
+        let immoLbl = '';
+        if (w.immo==='Fixed') {
+            const pref = w.immoShiftPref || 'Mixed';
+            const pct  = w.immoEarlyPct  != null ? w.immoEarlyPct : 60;
+            const prefStr = pref==='ImE' ? 'ImE Only'
+                          : pref==='ImL' ? 'ImL Only'
+                          : `Mix ${pct}E/${100-pct}L`;
+            immoLbl = `<br><span style="color:#d35400; font-weight:bold;">[F.Immo: ${prefStr}]</span>`;
+        }
+        if (w.immo==='Jump') immoLbl = `<br><span style="color:#8e44ad; font-weight:bold;">[J. Immo]</span>`;
+        let c22note = '';
+        if (w.contract==='22' && w.fixed6HDay != null) {
+            const dayLabel = ['Su','Mo','Tu','We','Th','Fr','Sa'][w.fixed6HDay] || 'Mo';
+            c22note = `<br><span style="color:#27ae60; font-size:10px;">[${dayLabel}→6H]</span>`;
+        }
+        headHTML += `<th>${w.name}
+            <button class="btn-delete-worker no-print" onclick="openEditModal(${i})" title="Edit worker" style="color:#0056b3;">✏️</button>
+            <button class="btn-delete-worker no-print" onclick="deleteWorker(${i})" title="Delete worker">✖</button>
+            <br><small>${w.system} ${w.contract}h${immoLbl}${c22note}</small></th>`;
+    });
+
+    headHTML += `
+        <th>8E<br><small>(Act/Tgt)</small></th>
+        <th>8M<br><small>(Act/Tgt)</small></th>
+        <th>8L<br><small>(Act/Tgt)</small></th>
+        ${use13H ? `<th>13H<br><small>(Act/Tgt)</small></th>` : ''}
+        ${use6H  ? `<th>6H<br><small>(Act/Tgt)</small></th>`  : ''}
+        <th style="background:#dff0f8;">ImE<br><small>(Act/Tgt)</small></th>
+        <th style="background:#cce0e8;">ImL<br><small>(Act/Tgt)</small></th>
+        <th style="background:#e8f4fc; color:#1a5276;" title="Total working staff this day">👥 Total<br><small>working</small></th>
+        <th>IR2 (E|M|L)</th><th>IR3 (E|M|L)</th><th>IR4 (E|M|L)</th>
+        <th>Immo (07:00|08:00|U)</th>
+        <th style="min-width:150px;">Room Warnings</th>
+        <th>Sick</th>
+        <th class="no-print">Vac Count</th>
+        <th>Daily Comments</th></tr>`;
+    document.getElementById('tableHead').innerHTML = headHTML;
+
+    // ── Body ──
+    let bodyHTML = '';
+    const streaks  = Array(workers.length).fill(0);
+    const minStaff = parseInt(document.getElementById('minStaff').value) || 0;
+
+    for (let d=0; d<daysInMonth; d++) {
+        const dateObj  = new Date(currentYear, currentMonth-1, d+1);
+        const dow      = dateObj.getDay();
+        const isWE     = (dow===0||dow===6);
+        const isHol    = isHoliday(d);
+        const rowClass = isHol ? 'holiday-row' : (isWE ? 'weekend' : '');
+
+        bodyHTML += `<tr class="${rowClass}">__DATECELL_${d}__`;
+
+        let c8E=0,c8M=0,c8L=0,c13H=0,c6H=0,cImE=0,cImL=0,vCount=0,sickCount=0,workingCount=0;
+        const rooms = {
+            IR2:{e:[],m:[],l:[]}, IR3:{e:[],m:[],l:[]},
+            IR4:{e:[],m:[],l:[]}, Immo:{e:[],l:[],u:[]}
+        };
+
+        workers.forEach((worker, wIndex) => {
+            const shift    = worker.shifts[d];
+            const baseShift = getBaseShift(shift);
+            const bgColor  = getColor(shift);
+
+            // Streak tracking (prev-month carry-over on day 0)
+            if (d===0) {
+                const prev = getPrevMonthLastDays(worker.name, maxConsec+1);
+                streaks[wIndex] = 0;
+                prev.forEach(ps => {
+                    if (workShifts.includes(getBaseShift(ps))) streaks[wIndex]++;
+                    else streaks[wIndex] = 0;
+                });
+            }
+            if (workShifts.includes(baseShift)) streaks[wIndex]++; else streaks[wIndex]=0;
+            const consecClass = streaks[wIndex] > maxConsec ? 'consecutive-warning' : '';
+
+            // Rest violation check
+            let prevBase = d>0
+                ? getBaseShift(worker.shifts[d-1])
+                : getBaseShift(getPrevMonthLastDays(worker.name,1)[0]);
+            const isRestViol = ['8L','8M'].includes(prevBase) && morningShifts.includes(baseShift);
+
+            // Counters
+            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(baseShift)) vCount++;
+            if (baseShift==='SICK') sickCount++;
+            if (baseShift==='8E')  c8E++;
+            if (baseShift==='8M')  c8M++;
+            if (baseShift==='8L')  c8L++;
+            if (baseShift==='13H') c13H++;
+            if (baseShift==='6H')  c6H++;
+            if (baseShift==='ImE') cImE++;
+            if (baseShift==='ImL') cImL++;
+            if (baseShift==='CUS') {
+                const ov = cusOverlap(shift);
+                if (ov.early) c8E++;
+                if (ov.late)  c8L++;
+            }
+            if (workShifts.includes(baseShift)) workingCount++;
+
+            // Room assignment
+            const reqStar  = worker.requests[d] ? ' ⭐' : '';
+            const cusInfo  = baseShift === 'CUS' ? cusOverlap(shift) : null;
+            const cusStar  = cusInfo && cusInfo.star ? ' <span title="Spans Early & Late — counted in both" style="color:#6c3483; font-weight:bold;">★</span>' : '';
+            const cusLabel = cusInfo ? `<div style="font-size:9px; color:#6c3483; font-weight:bold; margin-top:1px;">${cusInfo.label}${cusInfo.star?' ★':''}</div>` : '';
+            const nameChip = `<span class="name-chip" style="background-color:${bgColor};">${worker.name}${reqStar}</span>`;
+            if (shift.includes('IR2')) {
+                if (['8E','6H','13H'].includes(baseShift)) rooms.IR2.e.push(nameChip);
+                if (['8M'].includes(baseShift))            rooms.IR2.m.push(nameChip);
+                if (['8L','13H'].includes(baseShift))      rooms.IR2.l.push(nameChip);
+            }
+            if (shift.includes('IR3')) {
+                if (['8E','6H','13H'].includes(baseShift)) rooms.IR3.e.push(nameChip);
+                if (['8M'].includes(baseShift))            rooms.IR3.m.push(nameChip);
+                if (['8L','13H'].includes(baseShift))      rooms.IR3.l.push(nameChip);
+            }
+            if (shift.includes('IR4')) {
+                if (['8E','6H','13H'].includes(baseShift)) rooms.IR4.e.push(nameChip);
+                if (['8M'].includes(baseShift))            rooms.IR4.m.push(nameChip);
+                if (['8L','13H'].includes(baseShift))      rooms.IR4.l.push(nameChip);
+            }
+            if (shift.includes('Immo')||['ImE','ImL','U-Immo'].includes(baseShift)) {
+                if (['8E','6H','13H','ImE'].includes(baseShift)) rooms.Immo.e.push(nameChip);
+                if (['8L','8M','13H','ImL'].includes(baseShift)) rooms.Immo.l.push(nameChip);
+                if (baseShift==='U-Immo') rooms.Immo.u.push(nameChip);
+            }
+
+            const textCol  = isRestViol ? 'color:red;' : '';
+            const cellKey  = `${wIndex}_${d}`;
+            const selClass = selectedCells.has(cellKey) ? 'selected-cell' : '';
+
+            bodyHTML += `<td data-cell="${cellKey}" class="${selClass}" onclick="handleCellClick(event,${wIndex},${d})">
+                <select class="shift-select ${consecClass}" data-w="${wIndex}" data-d="${d}"
+                    style="background-color:${bgColor}; ${textCol}"
+                    onchange="updateShift(${wIndex},${d},this.value)">
+                    ${getDropdownOptions(shift)}
+                </select>${cusLabel}
+                <div style="margin-top:2px; font-size:10px; display:flex; align-items:center; gap:4px;" class="no-print">
+                    <label><input type="checkbox" title="Special Request"
+                        ${worker.requests[d]?'checked':''}
+                        onchange="updateRequest(${wIndex},${d},this.checked)"> 💬</label>
+                    <button onclick="openCustomHoursModal(${wIndex},${d})" title="Set custom hours" style="padding:0px 3px; font-size:9px; background:#6c3483; color:white; border:none; border-radius:2px; cursor:pointer; line-height:1.3;">⏰</button>
+                </div>
+            </td>`;
+        });
+
+        // ── Date cell — workingCount is now fully populated ──
+        const minAlert = (minStaff > 0 && !isWE && !isHol && workingCount < minStaff);
+        const holName   = getHolidayName(d);
+        const holNameHtml = holName ? `<br><em style="font-size:9px;color:#8e44ad;font-weight:normal;">${holName}</em>` : '';
+        const dateCellHtml =
+            `<td class="sticky-col ${rowClass}${minAlert?' min-staff-alert':''}"` +
+            ` title="${minAlert?'⚠ Only '+workingCount+' working (min '+minStaff+')':holName}">`+
+            `${dayNames[dow]} ${d+1}.${minAlert?' ⚠'+workingCount:''}${holNameHtml}</td>`+
+            `<td class="sticky-col no-print ${rowClass}"><input type="checkbox" ${isHol?'checked':''} onchange="toggleHoliday(${d})"></td>`+
+            `<td class="sticky-col no-print ${rowClass}"><input type="checkbox" ${lssDays.includes(d)?'checked':''} onchange="toggleLSS(${d})"></td>`;
+        // Replace the placeholder we inserted when the row opened
+        bodyHTML = bodyHTML.replace(`__DATECELL_${d}__`, dateCellHtml);
+
+        // Shift count columns
+        const tgt8E=dailyTargets[d].t8E, tgt8M=dailyTargets[d].t8M, tgt8L=dailyTargets[d].t8L;
+        const tgt13=dailyTargets[d].t13, tgt6=dailyTargets[d].t6;
+        const tgtImE=(dailyTargets[d].tImE||0), tgtImL=(dailyTargets[d].tImL||0);
+
+        const cls = (act,tgt) => (tgt===0&&act===0) ? '' : act<tgt ? 'warning' : 'optimal';
+        // Immo uses warning-only: amber when below target, neutral when met — never auto-filled
+        const clsImmo = (act,tgt) => {
+            if (tgt===0&&act===0) return '';
+            if (act<tgt) return 'warning-yellow';   // amber = need a Jump-in
+            return '';                               // no green — this is never "done" by auto-fill
+        };
+        bodyHTML += `
+            <td class="${cls(c8E,tgt8E)}"><strong>${c8E}</strong> / <input type="number" class="tgt-input no-print" value="${tgt8E}" onchange="updateDailyTarget(${d},'t8E',this.value)"></td>
+            <td class="${cls(c8M,tgt8M)}"><strong>${c8M}</strong> / <input type="number" class="tgt-input no-print" value="${tgt8M}" onchange="updateDailyTarget(${d},'t8M',this.value)"></td>
+            <td class="${cls(c8L,tgt8L)}"><strong>${c8L}</strong> / <input type="number" class="tgt-input no-print" value="${tgt8L}" onchange="updateDailyTarget(${d},'t8L',this.value)"></td>
+            ${use13H ? `<td class="${cls(c13H,tgt13)}"><strong>${c13H}</strong> / <input type="number" class="tgt-input no-print" value="${tgt13}" onchange="updateDailyTarget(${d},'t13',this.value)"></td>` : ''}
+            ${use6H  ? `<td class="${cls(c6H,tgt6)}"><strong>${c6H}</strong>  / <input type="number" class="tgt-input no-print" value="${tgt6}"  onchange="updateDailyTarget(${d},'t6',this.value)"></td>`  : ''}
+            <td class="${clsImmo(cImE,tgtImE)}" style="background-color:${clsImmo(cImE,tgtImE)?'':'#f0f8fb'};"><strong>${cImE}</strong> / <input type="number" class="tgt-input no-print" value="${tgtImE}" onchange="updateDailyTarget(${d},'tImE',this.value)"><br><small style="color:#888; font-size:9px;">${cImE<tgtImE?'⚠ Jump-in':''}</small></td>
+            <td class="${clsImmo(cImL,tgtImL)}" style="background-color:${clsImmo(cImL,tgtImL)?'':'#e8f4f8'};"><strong>${cImL}</strong> / <input type="number" class="tgt-input no-print" value="${tgtImL}" onchange="updateDailyTarget(${d},'tImL',this.value)"><br><small style="color:#888; font-size:9px;">${cImL<tgtImL?'⚠ Jump-in':''}</small></td>
+            <td style="background:${minAlert?'#ff6b6b':workingCount===0&&!isWE&&!isHol?'#fff3cd':'#e8f4fc'}; color:${minAlert?'white':'#1a5276'}; font-size:15px; font-weight:bold; text-align:center; vertical-align:middle;">${workingCount>0?workingCount:isWE||isHol?'':'-'}</td>`;
+
+        // Room columns
+        let roomCols = '', warnings = [];
+        ['IR2','IR3','IR4'].forEach(r => {
+            const eL=rooms[r].e, mL=rooms[r].m, lL=rooms[r].l;
+            if (eL.length>0&&(eL.length<2||eL.length>3)) warnings.push(`${r} Early: ${eL.length}`);
+            if (mL.length>0&&(mL.length<2||mL.length>3)) warnings.push(`${r} Mid: ${mL.length}`);
+            if (lL.length>0&&(lL.length<2||lL.length>3)) warnings.push(`${r} Late: ${lL.length}`);
+            roomCols += `<td class="room-box"><strong>E:</strong> ${eL.join(' ')||'-'}<br><strong>M:</strong> ${mL.join(' ')||'-'}<br><strong>L:</strong> ${lL.join(' ')||'-'}</td>`;
+        });
+        const totImmo = rooms.Immo.e.length + rooms.Immo.l.length;
+        if (totImmo>0&&(totImmo<2||totImmo>4)) warnings.push(`Immo Total: ${totImmo} staff`);
+        const uStr = rooms.Immo.u.length>0 ? `<br><strong>U:</strong> ${rooms.Immo.u.join(' ')}` : '';
+        roomCols += `<td class="room-box"><strong>07:00:</strong> ${rooms.Immo.e.join(' ')||'-'}<br><strong>08:00:</strong> ${rooms.Immo.l.join(' ')||'-'}${uStr}</td>`;
+
+        let warnHtml = warnings.length>0
+            ? `<strong style="color:red; font-size:11px;">⚠️ ${warnings.join('<br>⚠️ ')}</strong>`
+            : `<span style="color:green; font-size:11px;">✔️ OK</span>`;
+        if (isWE || isHol) warnHtml = '';
+
+        let vacClass = '';
+        if (maxVac>0) {
+            if (vCount>=maxVac)                    vacClass = 'warning';
+            else if (vCount===maxVac-1&&vCount>0)  vacClass = 'warning-yellow';
+        }
+        // maxVac === 0 means disabled — never warn
+
+        bodyHTML += `${roomCols}
+            <td style="text-align:left; vertical-align:middle;">${warnHtml}</td>
+            <td style="color:red; font-weight:bold; vertical-align:middle;">${sickCount>0?sickCount:''}</td>
+            <td class="no-print ${vacClass}" style="vertical-align:middle;">${vCount>0?vCount:''}</td>
+            <td style="vertical-align:middle;">
+                <input type="text" class="comment-input" placeholder="Type notes..."
+                    value="${(dailyComments[d]||'').replace(/"/g,'&quot;')}"
+                    onchange="updateComment(${d},this.value)">
+            </td></tr>`;
+    }
+    document.getElementById('tableBody').innerHTML = bodyHTML;
+
+    // ── Footer: Weekly Hours ──
+    const ftLabel = currentLang==='de' ? 'Ca. Wochenstunden:' : 'Approx. Weekly Hours:';
+    const wkLabel = currentLang==='de' ? '(Wo1|Wo2|Wo3|Wo4|Wo5)' : '(Wk1|Wk2|Wk3|Wk4|Wk5)';
+    let footHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:11px;">
+        ${ftLabel}<br><small>${wkLabel}</small></th>`;
+    workers.forEach(w => {
+        const wkHrs = [0,0,0,0,0];
+        w.shifts.forEach((s,i) => { wkHrs[Math.min(Math.floor(i/7),4)] += getShiftHours(s); });
+        footHTML += `<td style="font-size:10px; line-height:1.4;">
+            1:${wkHrs[0]}h<br>2:${wkHrs[1]}h<br>3:${wkHrs[2]}h<br>4:${wkHrs[3]}h<br>5:${wkHrs[4]}h</td>`;
+    });
+    footHTML += `<td colspan="16"></td></tr>`;
+
+    // ── Footer: Total Late Shifts ──
+    const lateLabel = use13H ? '(8L, 8M, 13H)' : '(8L ≤22:30 | 8M ≤20:00)';
+    let latesHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:12px; color:#c0392b;">
+        Total Late Shifts:<br><small>${lateLabel}</small></th>`;
+    workers.forEach(w => {
+        const lateTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
+        const nL  = w.shifts.filter(s => getBaseShift(s)==='8L').length;
+        const nM  = w.shifts.filter(s => getBaseShift(s)==='8M').length;
+        const n13 = use13H ? w.shifts.filter(s => getBaseShift(s)==='13H').length : 0;
+        const nIL = w.shifts.filter(s => getBaseShift(s)==='ImL').length;
+        const total = nL + nM + n13 + nIL;
+        const detail = `<span title="8L(22:30): ${nL} | 8M(20:00): ${nM}${use13H?' | 13H: '+n13:''}${nIL?' | ImL: '+nIL:''}" style="cursor:help;">
+            ${total}<br><small style="font-size:9px; color:#e67e22;">${nL}L / ${nM}M${use13H&&n13?' / '+n13+'×13':''}`;
+        latesHTML += `<td style="font-size:13px; font-weight:bold; color:#c0392b; line-height:1.3;">${detail}</small></span></td>`;
+    });
+    latesHTML += `<td colspan="16"></td></tr>`;
+
+    document.getElementById('tableFoot').innerHTML = footHTML + latesHTML;
+
+    // Refresh stats if visible
+    if (document.getElementById('statsToggle').checked) renderStats();
+}
+
+function clearBoard() {
+    if (!confirm('Clear all shifts for this month?')) return;
+    pushUndo();
+    workers.forEach(w => w.shifts = Array(daysInMonth).fill('-'));
+    lssDays=[]; dailyComments=Array(daysInMonth).fill('');
+    saveData(); renderTable();
+}
+
+function getDayCount(dayIndex, type) {
+    return workers.reduce((n,w) => n + (getBaseShift(w.shifts[dayIndex])===type ? 1 : 0), 0);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Auto-Generate
+//  BUG-FIX #3 — 22h worker: auto-place 6H on Mondays + 2×8H
+// ─────────────────────────────────────────────────────────
+function autoGenerate() {
+    if (!confirm('Auto-fill balanced schedule based on your Daily Targets?\nPre-filled shifts (VAC, SICK, 6H, FB, etc.) will be kept.')) return;
+    pushUndo();
+
+    const overwriteList  = ['-','OFF'];
+    const lateShiftTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
+
+    // Step 1: Reset all workers
+    workers.forEach(worker => {
+        const fixedOff = worker.fixedOff || [];
+        for (let d=0; d<daysInMonth; d++) {
+            const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+            if (fixedOff.includes(dow)) worker.shifts[d] = 'OFF';
+            else if (overwriteList.includes(getBaseShift(worker.shifts[d]))) worker.shifts[d] = '-';
+        }
+    });
+
+    // Step 2: Fixed-preference workers (Immo, Early Only, Late Only, 22h) — shuffle once
+    const fixedPrefIndices = workers.map((_,i)=>i)
+        .filter(i => { const w=workers[i]; return w.immo==='Fixed'||w.pref==='Early'||w.pref==='Late'||parseInt(w.contract)===22; })
+        .sort(() => Math.random()-0.5);
+
+    // Mixed-preference workers — re-sorted by late count each week for fairness
+    const mixedIndices = workers.map((_,i)=>i)
+        .filter(i => { const w=workers[i]; return w.immo!=='Fixed'&&w.pref==='Any'&&parseInt(w.contract)!==22; });
+
+    // Step 3: Fixed-pref workers — all weeks
+    fixedPrefIndices.forEach(wIndex => {
+        const worker = workers[wIndex];
+        const contractHrs = parseInt(worker.contract);
+        for (let w=0; w<5; w++) {
+            const startDay = w*7;
+            if (startDay >= daysInMonth) break;
+            const endDay = Math.min(startDay+7, daysInMonth);
+            let wkPool = [];
+            if (worker.immo==='Fixed') {
+                const n = contractHrs/8;
+                const pref = worker.immoShiftPref || 'Mixed';
+                const earlyPct = (worker.immoEarlyPct != null) ? worker.immoEarlyPct : 60;
+                for (let i=0;i<n;i++) {
+                    if (pref==='ImE') wkPool.push('ImE');
+                    else if (pref==='ImL') wkPool.push('ImL');
+                    else wkPool.push(Math.random()*100 < earlyPct ? 'ImE' : 'ImL');
+                }
+            } else if (worker.pref==='Early') {
+                for (let i=0;i<contractHrs/8;i++) wkPool.push('8E');
+            } else if (worker.pref==='Late') {
+                for (let i=0;i<contractHrs/8;i++) wkPool.push('8L-ANY');
+            } else if (parseInt(worker.contract)===22) {
+                const sixDay = (worker.fixed6HDay != null) ? worker.fixed6HDay : 1;
+                if (use6H) {
+                    for (let d2=startDay; d2<endDay; d2++) {
+                        const dow2 = new Date(currentYear, currentMonth-1, d2+1).getDay();
+                        if (dow2===sixDay && worker.shifts[d2]==='-' && !isHoliday(d2) && !(worker.fixedOff||[]).includes(sixDay))
+                            worker.shifts[d2] = '6H';
+                    }
+                }
+                wkPool.push('8H-ANY','8H-ANY');
+            }
+            placeShiftsGreedy(worker, wkPool, startDay, endDay);
+        }
+    });
+
+    // Step 4: Mixed workers — week by week, with enforced per-worker late quota
+    for (let w=0; w<5; w++) {
+        const startDay = w*7;
+        if (startDay >= daysInMonth) break;
+        const endDay = Math.min(startDay+7, daysInMonth);
+
+        // Count available workdays in this week for each worker
+        const getAvailWorkdays = (wIdx) => {
+            let count = 0;
+            for (let d=startDay; d<endDay; d++) {
+                const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+                const fixOff = workers[wIdx].fixedOff || [];
+                if (dow!==0 && dow!==6 && !isHoliday(d) && !fixOff.includes(dow)) count++;
+            }
+            return count;
+        };
+
+        // Workers with fewest lates so far go first for late assignment
+        const sortedMixed = [...mixedIndices].sort((a,b) => {
+            const latA = workers[a].shifts.filter(s => lateShiftTypes.includes(getBaseShift(s))).length;
+            const latB = workers[b].shifts.filter(s => lateShiftTypes.includes(getBaseShift(s))).length;
+            return (latA - latB) + (Math.random()*0.2 - 0.1);
+        });
+
+        sortedMixed.forEach(wIndex => {
+            const worker = workers[wIndex];
+            const contractHrs = parseInt(worker.contract);
+            const availDays   = getAvailWorkdays(wIndex);
+
+            // Already-filled hours this week (VAC/SICK/etc.)
+            let prefilled = 0;
+            for (let d2=startDay; d2<endDay; d2++)
+                prefilled += getShiftHours(worker.shifts[d2]);
+
+            // How many shifts to fill this week
+            let wkShifts = 0;
+            if (worker.system==='New') {
+                const isHigh = ((w+wIndex)%2!==0);
+                const targetW = isHigh
+                    ? (contractHrs===40?43:contractHrs===32?35:contractHrs===24?27:contractHrs)
+                    : (contractHrs===40?37:contractHrs===32?29:contractHrs===24?21:contractHrs);
+                const mandatory = (use13H&&contractHrs>=24?13:0) + (use6H&&contractHrs>=24&&isHigh?6:0);
+                wkShifts = Math.max(0, Math.floor((targetW - prefilled - mandatory) / 8));
+                // Add mandatory 13H/6H to pool
+                let wkPool = [];
+                if (use13H && contractHrs>=24) wkPool.push('13H');
+                if (use6H  && contractHrs>=24 && isHigh) wkPool.push('6H');
+                for (let i=0;i<wkShifts;i++) wkPool.push('8H-ANY');
+                // Calculate fair late quota for this week
+                // Target: ~lateRatio of all shifts in the week should be late
+                // lateRatio = 2/5 or 3/5 depending on whether we're on a "heavy late" or "light late" week
+                // We alternate per worker: even workers get heavy late on even w, light on odd w
+                const totalShiftsThisWeek = wkPool.length;
+                const isHeavyLate = ((w + wIndex) % 2 === 0);
+                // For a 5-day week: heavy = 2 lates (2/5), light = 2 lates too, occasionally 3
+                // More precisely: keep it at floor(totalShifts * 0.4) or ceil(totalShifts * 0.4)
+                const lateQuota = Math.round(totalShiftsThisWeek * 0.4);
+                worker._weekLateQuota = lateQuota;
+                worker._weekLateCount = 0;
+                placeShiftsGreedyFair(worker, wkPool, startDay, endDay);
+                delete worker._weekLateQuota;
+                delete worker._weekLateCount;
+            } else {
+                // Old system: strict alternating full-early / full-late weeks
+                const globalWeek = getContinuousWeek(currentYear, currentMonth, startDay);
+                const isEarlyWeek = (globalWeek+(wIndex%2))%2===0;
+                let wkPool = [];
+                for (let i=0;i<contractHrs/8;i++) wkPool.push(isEarlyWeek ? '8E' : '8L-ANY');
+                placeShiftsGreedy(worker, wkPool, startDay, endDay);
+            }
+        });
+    }
+
+    saveData(); renderTable();
+}
+
+function placeShiftsGreedy(worker, pool, startDay, endDay) {
+    pool.sort((a,b) => (shiftHours[b]||0)-(shiftHours[a]||0));
+
+    for (const s of pool) {
+        const validOptions = [];
+
+        for (let d=startDay; d<endDay; d++) {
+            const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+            if (dow===0||dow===6||isHoliday(d)||worker.shifts[d]!=='-') continue;
+
+            const tgt8E=dailyTargets[d].t8E, tgt8M=dailyTargets[d].t8M, tgt8L=dailyTargets[d].t8L;
+            const c8E=getDayCount(d,'8E'), c8M=getDayCount(d,'8M'), c8L=getDayCount(d,'8L');
+
+            let actualShift = s;
+            let score = 0;
+
+            if (s==='8H-ANY') {
+                const def8E=tgt8E-c8E, def8L=tgt8L-c8L, def8M=tgt8M-c8M;
+                const maxDef = Math.max(def8E, def8L, def8M);
+                const wEarly  = worker.shifts.filter(x => morningShifts.includes(getBaseShift(x))).length;
+                const wLate8L = worker.shifts.filter(x => getBaseShift(x)==='8L').length;
+                const wLate8M = worker.shifts.filter(x => getBaseShift(x)==='8M').length;
+                const wLate   = wLate8L + wLate8M;
+                if (maxDef>0) {
+                    let choices = [];
+                    if (def8E===maxDef) choices.push('8E');
+                    if (def8L===maxDef) choices.push('8L');
+                    if (def8M===maxDef) choices.push('8M');
+                    if (choices.includes('8E')&&(choices.includes('8L')||choices.includes('8M'))) {
+                        if (wLate < wEarly) {
+                            // need more late — pick the late type this worker has fewer of
+                            const lateChoices = choices.filter(c => c==='8L'||c==='8M');
+                            actualShift = lateChoices.length>1 ? (wLate8L<=wLate8M?'8L':'8M') : lateChoices[0] || '8E';
+                        } else {
+                            actualShift = '8E';
+                        }
+                    } else if (choices.includes('8L') && choices.includes('8M')) {
+                        // both late types equally needed — pick whichever worker has fewer of
+                        actualShift = wLate8L <= wLate8M ? '8L' : '8M';
+                    } else {
+                        actualShift = choices[Math.floor(Math.random()*choices.length)];
+                    }
+                    score = 1000 + maxDef;
+                } else {
+                    // no deficit — balance this worker's 8L vs 8M
+                    if (wLate < wEarly) {
+                        actualShift = wLate8L <= wLate8M ? '8L' : '8M';
+                    } else {
+                        actualShift = '8E';
+                    }
+                    score = 100;
+                }
+            } else if (s==='8L-ANY') {
+                const def8L=tgt8L-c8L, def8M=tgt8M-c8M;
+                const wLate8L = worker.shifts.filter(x => getBaseShift(x)==='8L').length;
+                const wLate8M = worker.shifts.filter(x => getBaseShift(x)==='8M').length;
+                if (def8L === def8M) {
+                    // tied deficit — pick whichever this worker has fewer of (8L is harder, prefer to balance)
+                    actualShift = wLate8L <= wLate8M ? '8L' : '8M';
+                } else {
+                    actualShift = def8L > def8M ? '8L' : '8M';
+                }
+                score = 1000+Math.max(def8L,def8M);
+            } else if (s==='8E') {
+                score = 1000+(tgt8E-c8E);
+            } else if (s==='6H') {
+                if (!use6H) continue;
+                if (getDayCount(d,'6H')>=dailyTargets[d].t6) continue;
+                score = 1000 - getDayCount(d,'6H')*2001;
+            } else if (s==='13H') {
+                if (!use13H) continue;
+                if (getDayCount(d,'13H')>=dailyTargets[d].t13) continue;
+                score = 1000 - getDayCount(d,'13H');
+            } else if (s==='ImE'||s==='ImL') {
+                score = 1000;
+            }
+
+            // Rest constraint
+            let prevBase = d>0
+                ? getBaseShift(worker.shifts[d-1])
+                : getBaseShift(getPrevMonthLastDays(worker.name,1)[0]);
+            const nextBase = d<daysInMonth-1 ? getBaseShift(worker.shifts[d+1]) : null;
+            if (morningShifts.includes(actualShift) && ['8L','8M'].includes(prevBase)) continue;
+            if (['8L','8M'].includes(actualShift) && morningShifts.includes(nextBase)) continue;
+
+            validOptions.push({ day:d, shift:actualShift, score: score+Math.random() });
+        }
+
+        validOptions.sort((a,b) => b.score-a.score);
+        if (validOptions.length>0) worker.shifts[validOptions[0].day] = validOptions[0].shift;
+    }
+}
+
+// Fair placement: honours worker._weekLateQuota so each week has ~2-3 lates
+function placeShiftsGreedyFair(worker, pool, startDay, endDay) {
+    // Sort: 13H first (longest), then 8H-ANY (flexible), then 6H (short)
+    pool.sort((a,b) => (shiftHours[b]||8)-(shiftHours[a]||8));
+
+    // Count pre-existing lates this week (from VAC carried-over etc.)
+    let wkLate = 0;
+    for (let d=startDay; d<endDay; d++) {
+        if (lateShiftTypes.includes(getBaseShift(worker.shifts[d]))) wkLate++;
+    }
+    const quota = (worker._weekLateQuota !== undefined) ? worker._weekLateQuota : 2;
+    let lateRemaining = Math.max(0, quota - wkLate);
+    let earlyRemaining = pool.filter(s => s==='8H-ANY' || s==='8E').length - lateRemaining;
+
+    for (const s of pool) {
+        const validOptions = [];
+        const tgt8E=0, tgt8M=0, tgt8L=0; // will be read per-day below
+
+        for (let d=startDay; d<endDay; d++) {
+            const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+            if (dow===0||dow===6||isHoliday(d)||worker.shifts[d]!=='-') continue;
+
+            const dt8E=dailyTargets[d].t8E, dt8M=dailyTargets[d].t8M, dt8L=dailyTargets[d].t8L;
+            const c8E=getDayCount(d,'8E'), c8M=getDayCount(d,'8M'), c8L=getDayCount(d,'8L');
+
+            let actualShift = s;
+            let score = 0;
+
+            if (s==='8H-ANY') {
+                const def8E=dt8E-c8E, def8L=dt8L-c8L, def8M=dt8M-c8M;
+                const maxDef = Math.max(def8E, def8L, def8M);
+                const wLate8L = worker.shifts.filter(x=>getBaseShift(x)==='8L').length;
+                const wLate8M = worker.shifts.filter(x=>getBaseShift(x)==='8M').length;
+
+                // Decide early vs late using weekly quota
+                const forceLate  = lateRemaining > 0 && (def8L>0 || def8M>0 || (def8E<=0));
+                const forceEarly = lateRemaining <= 0;
+
+                if (forceEarly || (!forceLate && def8E >= Math.max(def8L, def8M))) {
+                    actualShift = '8E';
+                } else {
+                    // Assign late — pick 8L or 8M based on deficit + worker balance
+                    if (def8L > def8M) actualShift = '8L';
+                    else if (def8M > def8L) actualShift = '8M';
+                    else actualShift = wLate8L <= wLate8M ? '8L' : '8M';
+                }
+
+                score = maxDef > 0 ? 1000 + maxDef : 100;
+
+            } else if (s==='8L-ANY') {
+                const def8L=dt8L-c8L, def8M=dt8M-c8M;
+                const wLate8L=worker.shifts.filter(x=>getBaseShift(x)==='8L').length;
+                const wLate8M=worker.shifts.filter(x=>getBaseShift(x)==='8M').length;
+                actualShift = def8L>def8M ? '8L' : def8M>def8L ? '8M' : wLate8L<=wLate8M?'8L':'8M';
+                score = 1000+Math.max(def8L,def8M);
+            } else if (s==='8E') {
+                score = 1000+(dt8E-c8E);
+            } else if (s==='6H') {
+                if (!use6H) continue;
+                if (getDayCount(d,'6H')>=dailyTargets[d].t6) continue;
+                score = 1000 - getDayCount(d,'6H')*2001;
+            } else if (s==='13H') {
+                if (!use13H) continue;
+                if (getDayCount(d,'13H')>=dailyTargets[d].t13) continue;
+                score = 1000 - getDayCount(d,'13H');
+                actualShift = '13H';
+            } else if (s==='ImE'||s==='ImL') {
+                score = 1000;
+            }
+
+            // Rest constraint
+            let prevBase = d>0 ? getBaseShift(worker.shifts[d-1]) : getBaseShift(getPrevMonthLastDays(worker.name,1)[0]);
+            const nextBase = d<daysInMonth-1 ? getBaseShift(worker.shifts[d+1]) : null;
+            if (morningShifts.includes(actualShift) && ['8L','8M'].includes(prevBase)) continue;
+            if (['8L','8M'].includes(actualShift) && morningShifts.includes(nextBase)) continue;
+
+            validOptions.push({ day:d, shift:actualShift, score: score+Math.random() });
+        }
+
+        validOptions.sort((a,b) => b.score-a.score);
+        if (validOptions.length>0) {
+            const chosen = validOptions[0];
+            worker.shifts[chosen.day] = chosen.shift;
+            if (lateShiftTypes.includes(getBaseShift(chosen.shift))) lateRemaining = Math.max(0, lateRemaining-1);
+        }
+    }
+}
+function openMonthDiff() {
+    const sel = document.getElementById('diffWorkerSelect');
+    sel.innerHTML = '<option value="">-- Select Worker --</option>';
+    workers.forEach((w,i) => sel.innerHTML += `<option value="${w.name}">${w.name}</option>`);
+
+    // Default month A = previous month, B = current
+    const prev = new Date(currentYear, currentMonth-2, 1);
+    document.getElementById('diffMonthA').value =
+        `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+    document.getElementById('diffMonthB').value = currentMonthKey;
+
+    document.getElementById('diffContent').innerHTML = '<p style="color:#888; font-size:12px;">Select a worker and two months, then click Compare.</p>';
+    document.getElementById('monthDiffModal').style.display = 'block';
+}
+
+function renderMonthDiff() {
+    const wName  = document.getElementById('diffWorkerSelect').value;
+    const keyA   = document.getElementById('diffMonthA').value;
+    const keyB   = document.getElementById('diffMonthB').value;
+
+    if (!wName)       return alert('Please select a worker.');
+    if (!keyA||!keyB) return alert('Please select both months.');
+    if (keyA===keyB)  return alert('Please select two different months.');
+
+    const getMonthData = (key) => {
+        const [y,m] = key.split('-').map(Number);
+        const dim   = new Date(y, m, 0).getDate();
+        const saved = allMonthsData[key];
+        if (!saved) return null;
+        const w = saved.workers.find(x => x.name===wName);
+        return w ? { shifts: w.shifts, dim, y, m } : null;
+    };
+
+    const a = getMonthData(keyA);
+    const b = getMonthData(keyB);
+
+    const monthLabel = (key) => {
+        const [y,m] = key.split('-').map(Number);
+        return new Date(y,m-1,1).toLocaleString('default',{month:'long',year:'numeric'});
+    };
+
+    const shiftSummary = (data) => {
+        if (!data) return { shifts:[], earlyN:0, lateN:0, vacN:0, sickN:0, totalH:0 };
+        const earlyN = data.shifts.filter(s=>morningShifts.includes(getBaseShift(s))).length;
+        const lateN  = data.shifts.filter(s=>(use13H?['8L','8M','13H','ImL']:['8L','8M','ImL']).includes(getBaseShift(s))).length;
+        const vacN   = data.shifts.filter(s=>['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(getBaseShift(s))).length;
+        const sickN  = data.shifts.filter(s=>getBaseShift(s)==='SICK').length;
+        const totalH = data.shifts.reduce((s,sh)=>(s+(shiftHours[getBaseShift(sh)]||0)),0);
+        return { shifts:data.shifts, dim:data.dim, earlyN, lateN, vacN, sickN, totalH };
+    };
+
+    const sa = shiftSummary(a);
+    const sb = shiftSummary(b);
+
+    const diffCol = (va, vb, lowerBetter=false) => {
+        if (va===vb) return `<span style="color:#888;">0</span>`;
+        const diff = vb - va;
+        const better = lowerBetter ? diff < 0 : diff > 0;
+        return `<span style="color:${better?'#27ae60':'#c0392b'}; font-weight:bold;">${diff>0?'+':''}${diff}</span>`;
+    };
+
+    // Build day-by-day table
+    const maxDim = Math.max(sa.dim||0, sb.dim||0);
+    let rows = '';
+    for (let d=0; d<maxDim; d++) {
+        const sA = a ? (sa.shifts[d]||'—') : '—';
+        const sB = b ? (sb.shifts[d]||'—') : '—';
+        const changed = sA !== sB;
+        const bgA = sA!=='—' ? getColor(sA) : '';
+        const bgB = sB!=='—' ? getColor(sB) : '';
+        rows += `<tr${changed?' style="background:#fffde7;"':''}>
+            <td style="font-weight:bold; color:#555;">${d+1}</td>
+            <td><span style="background:${bgA};padding:1px 6px;border-radius:3px;font-weight:bold;">${sA}</span></td>
+            <td><span style="background:${bgB};padding:1px 6px;border-radius:3px;font-weight:bold;">${sB}</span></td>
+            <td style="font-size:11px; color:${changed?'#e67e22':'#aaa'};">${changed?'changed':''}</td>
+        </tr>`;
+    }
+
+    document.getElementById('diffContent').innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+            <div style="background:#f8f9fa; padding:10px; border-radius:6px; border:2px solid #3498db;">
+                <strong style="color:#2980b9;">${monthLabel(keyA)}</strong><br>
+                <small>${a?'':'⚠ No data saved for this month'}</small>
+                <table style="width:100%; margin-top:6px; font-size:12px;">
+                    <tr><td>Total hours</td><td><strong>${sa.totalH}h</strong></td></tr>
+                    <tr><td>Early shifts</td><td><strong>${sa.earlyN}</strong></td></tr>
+                    <tr><td>Late shifts</td><td><strong>${sa.lateN}</strong></td></tr>
+                    <tr><td>Vacation</td><td><strong>${sa.vacN}</strong></td></tr>
+                    <tr><td>Sick days</td><td><strong>${sa.sickN}</strong></td></tr>
+                </table>
+            </div>
+            <div style="background:#f8f9fa; padding:10px; border-radius:6px; border:2px solid #27ae60;">
+                <strong style="color:#219653;">${monthLabel(keyB)}</strong><br>
+                <small>${b?'':'⚠ No data saved for this month'}</small>
+                <table style="width:100%; margin-top:6px; font-size:12px;">
+                    <tr><td>Total hours</td><td><strong>${sb.totalH}h</strong> ${diffCol(sa.totalH,sb.totalH)}</td></tr>
+                    <tr><td>Early shifts</td><td><strong>${sb.earlyN}</strong> ${diffCol(sa.earlyN,sb.earlyN)}</td></tr>
+                    <tr><td>Late shifts</td><td><strong>${sb.lateN}</strong> ${diffCol(sa.lateN,sb.lateN,true)}</td></tr>
+                    <tr><td>Vacation</td><td><strong>${sb.vacN}</strong> ${diffCol(sa.vacN,sb.vacN,true)}</td></tr>
+                    <tr><td>Sick days</td><td><strong>${sb.sickN}</strong> ${diffCol(sa.sickN,sb.sickN,true)}</td></tr>
+                </table>
+            </div>
+        </div>
+        <p style="font-size:11px; color:#888; margin-bottom:6px;">🟡 Highlighted rows = shift changed between months</p>
+        <div style="overflow-x:auto; max-height:320px; overflow-y:auto; border:1px solid #ddd; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead><tr style="background:#eee; position:sticky; top:0;">
+                    <th style="padding:5px;">Day</th>
+                    <th style="padding:5px;">${monthLabel(keyA)}</th>
+                    <th style="padding:5px;">${monthLabel(keyB)}</th>
+                    <th style="padding:5px;">Status</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+}
+
+// ─────────────────────────────────────────────────────────
+//  AI Analysis
+// ─────────────────────────────────────────────────────────
+function runAIAnalysis() {
+    const maxConsec = parseInt(document.getElementById('maxConsecutive').value) || 5;
+    let report = '';
+
+    const latesData = workers
+        .filter(w => w.contract==='40' && w.system==='New' && w.pref==='Any' && w.immo!=='Fixed')
+        .map(w => ({ name:w.name, count:w.shifts.filter(s=>(use13H?['8L','8M','13H']:['8L','8M']).includes(getBaseShift(s))).length }))
+        .sort((a,b)=>b.count-a.count);
+
+    if (latesData.length>=2) {
+        const hi=latesData[0], lo=latesData[latesData.length-1];
+        report += `<h3>⚖️ Fairness Check (Full-Time Mixed)</h3>
+            <p>Most late shifts: <strong>${hi.name}</strong> (${hi.count})<br>
+               Least late shifts: <strong>${lo.name}</strong> (${lo.count})</p>`;
+        report += hi.count-lo.count>2
+            ? `<p style="color:red;"><em>Suggestion: Swap a late shift from ${hi.name} to ${lo.name}.</em></p>`
+            : `<p style="color:green;"><em>Status: Fairly balanced!</em></p>`;
+    }
+
+    report += `<h3>🚨 Labor Law Checks (Includes Last Month Carry-Over)</h3>`;
+    let consecViol=[], restViol=[];
+
+    workers.forEach(w => {
+        const pShifts = getPrevMonthLastDays(w.name, maxConsec+1);
+        let streak=0;
+        pShifts.forEach(s => { if(workShifts.includes(getBaseShift(s))) streak++; else streak=0; });
+
+        w.shifts.forEach((s,d) => {
+            const bs = getBaseShift(s);
+            if (workShifts.includes(bs)) streak++; else streak=0;
+            if (streak>maxConsec) consecViol.push(`${w.name} (around Day ${d+1})`);
+
+            const prevBs = d>0 ? getBaseShift(w.shifts[d-1]) : getBaseShift(pShifts[pShifts.length-1]);
+            if (['8L','8M'].includes(prevBs) && morningShifts.includes(bs))
+                restViol.push(`${w.name} (Day ${d===0?'last month':d} → Day ${d+1})`);
+        });
+    });
+
+    consecViol = [...new Set(consecViol)];
+    report += consecViol.length>0
+        ? `<p style="color:red;"><strong>More than ${maxConsec} consecutive days:</strong><br>${consecViol.join('<br>')}</p>`
+        : `<p style="color:green;">✔️ No consecutive day violations.</p>`;
+    report += restViol.length>0
+        ? `<p style="color:red;"><strong>11h rest violations (Late→Early):</strong><br>${restViol.join('<br>')}</p>`
+        : `<p style="color:green;">✔️ No 11-hour rest violations.</p>`;
+
+    report += `<h3>📅 Target Staffing Gaps</h3>`;
+    const gaps = [];
+    const immoGaps = [];
+    for (let d=0; d<daysInMonth; d++) {
+        const c8E=getDayCount(d,'8E'),c8M=getDayCount(d,'8M'),c8L=getDayCount(d,'8L'),c13=getDayCount(d,'13H');
+        const cImE=getDayCount(d,'ImE'), cImL=getDayCount(d,'ImL');
+        const tgtImE=dailyTargets[d].tImE||0, tgtImL=dailyTargets[d].tImL||0;
+        if (c8E<dailyTargets[d].t8E) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t8E} 8E, have ${c8E}`);
+        if (c8M<dailyTargets[d].t8M) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t8M} 8M, have ${c8M}`);
+        if (c8L<dailyTargets[d].t8L) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t8L} 8L, have ${c8L}`);
+        if (use13H && c13<dailyTargets[d].t13) gaps.push(`Day ${d+1}: need ${dailyTargets[d].t13} 13H, have ${c13}`);
+        if (cImE<tgtImE) immoGaps.push(`Day ${d+1}: need ${tgtImE} ImE (07:00), have ${cImE} — assign a Jump-in`);
+        if (cImL<tgtImL) immoGaps.push(`Day ${d+1}: need ${tgtImL} ImL (08:00), have ${cImL} — assign a Jump-in`);
+    }
+    report += gaps.length>0
+        ? `<ul style="color:red; font-size:12px;"><li>${gaps.join('</li><li>')}</li></ul>`
+        : `<p style="color:green;">✔️ All regular daily targets are fully met!</p>`;
+
+    report += `<h3>🏥 Immo Coverage Gaps (Manual Jump-in Required)</h3>`;
+    report += immoGaps.length>0
+        ? `<ul style="color:#856404; background:#fff3cd; padding:10px 10px 10px 28px; border-radius:4px; font-size:12px; border:1px solid #ffc107;"><li>${immoGaps.join('</li><li>')}</li></ul>`
+        : `<p style="color:green;">✔️ All Immo targets are covered!</p>`;
+
+    // ── Shift Swap Suggestions ──
+    report += `<h3>🔄 Shift Swap Suggestions</h3>`;
+    const swapSuggestions = [];
+
+    // 1. Fairness swaps — balance late shifts among full-time mixed workers
+    if (latesData.length >= 2) {
+        const hi = latesData[0], lo = latesData[latesData.length-1];
+        if (hi.count - lo.count > 2) {
+            const hiW = workers.find(w=>w.name===hi.name);
+            const loW = workers.find(w=>w.name===lo.name);
+            if (hiW && loW) {
+                // Find a late shift on hiW that loW doesn't have a conflict for
+                for (let d=0; d<daysInMonth; d++) {
+                    const hiBase = getBaseShift(hiW.shifts[d]);
+                    const loBase = getBaseShift(loW.shifts[d]);
+                    if (!['8L','8M'].includes(hiBase)) continue;
+                    if (loBase !== '-' && loBase !== 'OFF') continue;
+                    // Check loW prev day rest
+                    const loPrev = d>0 ? getBaseShift(loW.shifts[d-1]) : '-';
+                    if (['8L','8M'].includes(loPrev)) continue;
+                    const dow = new Date(currentYear,currentMonth-1,d+1).getDay();
+                    if (dow===0||dow===6||isHoliday(d)) continue;
+                    swapSuggestions.push(
+                        `<strong>Fairness:</strong> Day ${d+1} — give <em>${hiBase}</em> to <strong>${lo.name}</strong> ` +
+                        `(currently ${loBase||'free'}) instead of <strong>${hi.name}</strong>. ` +
+                        `Reduces imbalance from ${hi.count-lo.count} to ${hi.count-lo.count-1}.`
+                    );
+                    break;
+                }
+            }
+        }
+    }
+
+    // 2. Rest violation swaps — find someone who can cover without violation
+    restViol.forEach(vStr => {
+        const match = vStr.match(/^(.+) \(Day (.+) → Day (\d+)\)/);
+        if (!match) return;
+        const wName = match[1], dayNum = parseInt(match[3])-1;
+        const vWorker = workers.find(w=>w.name===wName);
+        if (!vWorker) return;
+        const problematicShift = getBaseShift(vWorker.shifts[dayNum]);
+        const dow = new Date(currentYear,currentMonth-1,dayNum+1).getDay();
+        if (dow===0||dow===6||isHoliday(dayNum)) return;
+
+        // Find a free worker who can cover this shift without rest violation
+        const candidate = workers.find(w => {
+            if (w.name===wName) return false;
+            if (getBaseShift(w.shifts[dayNum]) !== '-') return false;
+            const prev = dayNum>0 ? getBaseShift(w.shifts[dayNum-1]) : '-';
+            if (['8L','8M'].includes(prev) && morningShifts.includes(problematicShift)) return false;
+            return true;
+        });
+        if (candidate) {
+            swapSuggestions.push(
+                `<strong>Rest fix:</strong> Day ${dayNum+1} — move <em>${problematicShift}</em> from <strong>${wName}</strong> ` +
+                `to <strong>${candidate.name}</strong> (currently free that day). Fixes the rest violation.`
+            );
+        }
+    });
+
+    // 3. Understaffed day swaps — pull someone from a free day nearby
+    for (let d=0; d<daysInMonth; d++) {
+        const dow = new Date(currentYear,currentMonth-1,d+1).getDay();
+        if (dow===0||dow===6||isHoliday(d)) continue;
+        const c8E=getDayCount(d,'8E'), c8L=getDayCount(d,'8L'), c8M=getDayCount(d,'8M');
+        const short8E = dailyTargets[d].t8E - c8E;
+        const short8L = dailyTargets[d].t8L - c8L;
+        const short8M = dailyTargets[d].t8M - c8M;
+        const shortType = short8E>0?'8E': short8L>0?'8L': short8M>0?'8M': null;
+        if (!shortType) continue;
+
+        const candidate = workers.find(w => {
+            if (w.immo==='Fixed') return false;
+            if (getBaseShift(w.shifts[d]) !== '-') return false;
+            const prev = d>0 ? getBaseShift(w.shifts[d-1]) : '-';
+            if (['8L','8M'].includes(prev) && morningShifts.includes(shortType)) return false;
+            return true;
+        });
+        if (candidate) {
+            swapSuggestions.push(
+                `<strong>Understaffed:</strong> Day ${d+1} needs more <em>${shortType}</em> — ` +
+                `<strong>${candidate.name}</strong> is free that day and could be assigned <em>${shortType}</em>.`
+            );
+            break; // one suggestion per scan is enough to avoid flooding
+        }
+    }
+
+    if (swapSuggestions.length > 0) {
+        report += `<ul style="font-size:12px; line-height:1.8; padding-left:20px;">
+            <li>${swapSuggestions.join('</li><li>')}</li></ul>
+            <p style="font-size:11px; color:#888;">These are suggestions only — apply changes manually in the table. Use Undo (Ctrl+Z) if needed.</p>`;
+    } else {
+        report += `<p style="color:green;">✔️ No obvious swaps needed — schedule looks balanced!</p>`;
+    }
+
+    document.getElementById('aiReportContent').innerHTML = report;
+    document.getElementById('aiModal').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────
+//  Personal Export
+// ─────────────────────────────────────────────────────────
+function openPersonalModal() {
+    const sel = document.getElementById('personalWorkerSelect');
+    sel.innerHTML = '<option value="">-- Select Worker --</option>';
+    workers.forEach((w,i) => sel.innerHTML += `<option value="${i}">${w.name}</option>`);
+    document.getElementById('personalTextArea').value = '';
+    document.getElementById('personalModal').style.display = 'block';
+}
+
+function generatePersonalText() {
+    const wIndex = document.getElementById('personalWorkerSelect').value;
+    if (wIndex==='') { document.getElementById('personalTextArea').value=''; return; }
+    const w = workers[wIndex];
+    const monthName = new Date(currentYear, currentMonth-1, 1).toLocaleString('default',{month:'long'});
+    let text = `📅 Schedule for ${w.name} (${monthName} ${currentYear})\n====================================\n`;
+    for (let d=0; d<daysInMonth; d++) {
+        const dow   = new Date(currentYear, currentMonth-1, d+1).getDay();
+        const shift = w.shifts[d]==='-' ? 'OFF' : w.shifts[d];
+        text += `${String(d+1).padStart(2,'0')}. ${dayNames[dow]}: ${shift}\n`;
+    }
+    document.getElementById('personalTextArea').value = text;
+}
+
+function copyPersonalText() {
+    const ta = document.getElementById('personalTextArea');
+    if (!ta.value) { alert('Please select a worker first!'); return; }
+    ta.select(); ta.setSelectionRange(0,99999);
+    document.execCommand('copy');
+    alert('✅ Schedule copied to clipboard!');
+}
+
+// ─────────────────────────────────────────────────────────
+//  Download as HTML (with embedded data for SharePoint)
+// ─────────────────────────────────────────────────────────
+function downloadAsHTML() {
+    saveData(); // ensure latest state is saved
+
+    // Embed the current allMonthsData as a seed script so the downloaded
+    // file carries all shifts/workers and pre-loads them into localStorage
+    const seedScript = `\n<script id="__seed__">
+(function(){
+    try {
+        var existing = localStorage.getItem('shiftPlannerAllMonthsV23');
+        var seeded   = ${JSON.stringify(JSON.stringify(allMonthsData))};
+        // Only overwrite if the file carries newer/different data
+        if (!existing || existing !== seeded) {
+            localStorage.setItem('shiftPlannerAllMonthsV23', seeded);
+        }
+    } catch(e) {}
+    // Remove this seed script after it runs so it doesn't re-seed on edits
+    var s = document.getElementById('__seed__');
+    if (s) s.parentNode.removeChild(s);
+})();
+<\/script>`;
+
+    let html = document.documentElement.outerHTML;
+    // Insert seed script just before </head>
+    html = html.replace('</head>', seedScript + '\n</head>');
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    const monthStr = currentMonthKey || new Date().toISOString().slice(0, 7);
+    a.download = `ShiftPlanner_${monthStr}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('✅ HTML file downloaded!\n\nOpen it in any browser — your current data is embedded.\nYou can upload this file directly to SharePoint.');
+}
+
+
+function copyColorfulExcel() {
+    let html = "<table border='1' style='font-family:Arial,sans-serif; font-size:12px; border-collapse:collapse;'>";
+    html += `<tr><th>Date</th><th>Holiday?</th><th>LSS?</th>`;
+    workers.forEach(w => html += `<th>${w.name} (${w.contract}h)</th>`);
+    html += `<th>8E</th><th>8M</th><th>8L</th>${use13H?'<th>13H</th>':''}${use6H?'<th>6H</th>':''}<th>ImE</th><th>ImL</th><th>Total</th><th>Sick</th><th>Vac</th><th>Comments</th></tr>`;
+
+    for (let d=0; d<daysInMonth; d++) {
+        const dow = new Date(currentYear, currentMonth-1, d+1).getDay();
+        let row = `<tr><td>${dayNames[dow]} ${d+1}.${currentMonth}.</td>
+            <td>${isHoliday(d)?'Y':'N'}</td><td>${lssDays.includes(d)?'Y':'N'}</td>`;
+        let s8E=0,s8M=0,s8L=0,s13H=0,s6H=0,sImE=0,sImL=0,sWork=0,svac=0,ssick=0;
+        workers.forEach(w => {
+            const sh=w.shifts[d], b=getBaseShift(sh);
+            const bgColor = getColor(sh);
+            const reqStr  = (w.requests&&w.requests[d]) ? ' (*)' : '';
+            row += `<td style="background-color:${bgColor}; text-align:center; font-weight:bold;">${sh!=='-'?sh+reqStr:''}</td>`;
+            if (b==='8E') s8E++; if (b==='8M') s8M++; if (b==='8L') s8L++;
+            if (b==='13H') s13H++; if (b==='6H') s6H++;
+            if (b==='ImE') sImE++; if (b==='ImL') sImL++;
+            if (b==='CUS') { const ov=cusOverlap(sh); if(ov.early) s8E++; if(ov.late) s8L++; }
+            if (workShifts.includes(b)) sWork++;
+            if (['VAC','Urlaub IR','Urlaub-ZA','U-Immo'].includes(b)) svac++;
+            if (b==='SICK') ssick++;
+        });
+        row += `<td>${s8E}</td><td>${s8M}</td><td>${s8L}</td>` + (use13H?`<td>${s13H}</td>`:'') + (use6H?`<td>${s6H}</td>`:'') + `
+            <td style="background:#dff0f8;">${sImE}</td>
+            <td style="background:#cce0e8;">${sImL}</td>
+            <td style="background:#e8f4fc; font-weight:bold;">${sWork}</td>
+            <td style="color:red; font-weight:bold;">${ssick>0?ssick:''}</td>
+            <td>${svac>0?svac:''}</td><td>${dailyComments[d]||''}</td></tr>`;
+        html += row;
+    }
+
+    html += `<tr><th colspan="3" style="text-align:right; color:#c0392b;">Total Late (8L/8M${use13H?'/13H':''}):</th>`;
+    workers.forEach(w => {
+        const lateTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
+        const n = w.shifts.filter(s=>lateTypes.includes(getBaseShift(s))).length;
+        html += `<th style="color:#c0392b;">${n}</th>`;
+    });
+    const colSpan = 9 + (use13H?1:0) + (use6H?1:0);
+    html += `<td colspan="${colSpan}"></td></tr></table>`;
+
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute; left:-9999px;';
+    tmp.innerHTML = html;
+    document.body.appendChild(tmp);
+    const range = document.createRange();
+    range.selectNode(tmp);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    try {
+        document.execCommand('copy');
+        alert('✅ Success! Open Excel, select top-left cell, press Ctrl+V.');
+    } catch(err) {
+        alert('Oops! Browser blocked the clipboard. Error: ' + err);
+    }
+    window.getSelection().removeAllRanges();
+    document.body.removeChild(tmp);
+}
+
+// ─────────────────────────────────────────────────────────
+//  Language Toggle — EN / DE
+// ─────────────────────────────────────────────────────────
+const T = {
+  en: {
+    pageTitle:      'Shift Planner (Forever Memory Enabled ⏳💾)',
+    langBtn:        '🌐 Deutsch',
+    months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+    p1title:        '1. Setup & Action',
+    p2title:        '2. Add Worker',
+    p3title:        'Legend & Limits',
+    monthLabel:     'Month (Auto-detects AT Holidays):',
+    targetsTitle:   'Master Granular Targets',
+    wdLabel:        'Weekday Defaults:',
+    weLabel:        'Weekend/Holiday Defaults:',
+    immoTgtTitle:   '🏥 Immo Targets (Weekdays only)',
+    immoTgtNote:    'Warning-only — Auto-Fill never touches these. Use Jump-in workers to cover gaps.\nImmo always 0 on weekends & holidays.',
+    toggle13Hlabel: 'Enable <span style="background:#ffe599;padding:1px 5px;border-radius:3px;">13H</span> shifts (07:00–20:00)',
+    toggle6Hlabel:  'Enable <span style="background:#d9ead3;padding:1px 5px;border-radius:3px;">6H</span> shifts (07:00–13:00)',
+    toggleShiftNote:'When off: column hidden, Auto-Fill skips it.',
+    fairNote:       '⚖️ <strong>Fair 8L / 8M rotation:</strong> Auto-Fill uses a weekly late quota per worker — so every worker gets ~2–3 lates and ~2–3 earlies each week, and 8L (22:30) vs 8M (20:00) are kept balanced too.',
+    btnAutoFill:    '✨ Smart Auto-Fill',
+    undoBtn:        '↩ Undo',
+    redoBtn:        '↪ Redo',
+    btnAI:          '🤖 AI Analysis',
+    btnPersonal:    '📱 Personal Export',
+    btnHelp:        '📖 Help & Guide',
+    btnRefresh:     '🔄 Refresh Board',
+    btnBackup:      '💾 Backup JSON',
+    btnRestore:     '📂 Restore JSON',
+    btnExcel:       '📋 Copy for Excel',
+    btnHTML:        '⬇️ Download as HTML (SharePoint)',
+    btnDiff:        '📆 Month Comparison',
+    selectModeBtn:  '⬜ Select Mode',
+    btnClear:       '🗑️ Clear Month',
+    lbl_name:       'Name',
+    lbl_sys:        'System',
+    lbl_con:        'Contract',
+    lbl_pref:       'Shift Preference',
+    lbl_immo:       'Immo Role',
+    opt_mixed:      'Mixed Shifts',
+    opt_early:      'Early Only',
+    opt_late:       'Late Only',
+    opt_std:        'Standard',
+    opt_fimmo:      'Fixed Immo',
+    opt_jimmo:      'Immo Jump-in',
+    lbl_fixedoff:   'Fixed Days Off:',
+    btnAddWorker:   '+ Add Worker',
+    btnClearAll:    '🗑️ Clear All Workers',
+    lbl_maxvac:     'Max Vacation per day:',
+    lbl_vacnote:    'Yellow = 1 spot left | Red = Full',
+    lbl_maxcon:     'Max Consecutive Days:',
+    lbl_minstaf:    'Min Working Staff / day:',
+    lbl_minstafnote:'0 = disabled | Date cell turns red if below',
+    lbl_shortcuts:  '<strong>⌨ Arrow keys</strong> navigate cells.<br><strong>Ctrl+Z / Ctrl+Y</strong> undo & redo.<br><strong>⬜ Select Mode</strong> bulk-fills multiple cells.',
+    statsTitle:     'Worker Statistics',
+    statsToggle:    '📊 Show Worker Stats Panel',
+    selModeLabel:   '⬜ Select Mode',
+    selCellsLabel:  'cells selected',
+    btnApplyBulk:   '✔ Apply to All Selected',
+    btnClearSel:    '✖ Clear Selection',
+    btnExitSel:     '✖ Exit',
+    helpTitle:      '📖 A to Z User Guide — v4',
+    helpContent:    getHelpContent('en'),
+  },
+  de: {
+    pageTitle:      'Dienstplaner (Dauerspeicher aktiviert ⏳💾)',
+    langBtn:        '🌐 English',
+    months: ['Jänner','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+    p1title:        '1. Einrichtung & Aktionen',
+    p2title:        '2. Mitarbeiter hinzufügen',
+    p3title:        'Legende & Limits',
+    monthLabel:     'Monat (AT-Feiertage werden automatisch erkannt):',
+    targetsTitle:   'Tagesgenaue Zielwerte',
+    wdLabel:        'Werktag-Standards:',
+    weLabel:        'Wochenende/Feiertag-Standards:',
+    immoTgtTitle:   '🏥 Immo-Zielwerte (nur Werktage)',
+    immoTgtNote:    'Nur Warnung — Auto-Befüllung ändert diese nie. Jump-in-Mitarbeiter bei Lücken einsetzen.\nImmo ist an Wochenenden und Feiertagen immer 0.',
+    toggle13Hlabel: '<span style="background:#ffe599;padding:1px 5px;border-radius:3px;">13H</span>-Dienste aktivieren (07:00–20:00)',
+    toggle6Hlabel:  '<span style="background:#d9ead3;padding:1px 5px;border-radius:3px;">6H</span>-Dienste aktivieren (07:00–13:00)',
+    toggleShiftNote:'Wenn deaktiviert: Spalte ausgeblendet, Auto-Befüllung überspringt diesen Dienst.',
+    fairNote:       '⚖️ <strong>Gerechte 8L / 8M-Rotation:</strong> Die Auto-Befüllung verwendet ein wöchentliches Spätdienst-Kontingent je Mitarbeiter — so bekommt jeder ~2–3 Spät- und ~2–3 Frühdienste pro Woche, und 8L (22:30) und 8M (20:00) werden ausgewogen verteilt.',
+    btnAutoFill:    '✨ Intelligente Auto-Befüllung',
+    undoBtn:        '↩ Rückgängig',
+    redoBtn:        '↪ Wiederholen',
+    btnAI:          '🤖 KI-Analyse',
+    btnPersonal:    '📱 Persönlicher Export',
+    btnHelp:        '📖 Hilfe & Anleitung',
+    btnRefresh:     '🔄 Ansicht aktualisieren',
+    btnBackup:      '💾 JSON-Sicherung',
+    btnRestore:     '📂 JSON wiederherstellen',
+    btnExcel:       '📋 Für Excel kopieren',
+    btnHTML:        '⬇️ Als HTML herunterladen (SharePoint)',
+    btnDiff:        '📆 Monatsvergleich',
+    selectModeBtn:  '⬜ Auswahlmodus',
+    btnClear:       '🗑️ Monat leeren',
+    lbl_name:       'Name',
+    lbl_sys:        'System',
+    lbl_con:        'Vertrag',
+    lbl_pref:       'Dienstpräferenz',
+    lbl_immo:       'Immo-Rolle',
+    opt_mixed:      'Gemischte Dienste',
+    opt_early:      'Nur Frühdienst',
+    opt_late:       'Nur Spätdienst',
+    opt_std:        'Standard',
+    opt_fimmo:      'Festes Immo',
+    opt_jimmo:      'Immo-Einspringer',
+    lbl_fixedoff:   'Feste freie Tage:',
+    btnAddWorker:   '+ Mitarbeiter hinzufügen',
+    btnClearAll:    '🗑️ Alle Mitarbeiter löschen',
+    lbl_maxvac:     'Max. Urlaub pro Tag:',
+    lbl_vacnote:    'Gelb = 1 Platz frei | Rot = Voll',
+    lbl_maxcon:     'Max. aufeinanderfolgende Tage:',
+    lbl_minstaf:    'Min. arbeitendes Personal / Tag:',
+    lbl_minstafnote:'0 = deaktiviert | Datumszelle wird rot wenn unterschritten',
+    lbl_shortcuts:  '<strong>⌨ Pfeiltasten</strong> navigieren durch Zellen.<br><strong>Strg+Z / Strg+Y</strong> rückgängig & wiederholen.<br><strong>⬜ Auswahlmodus</strong> füllt mehrere Zellen auf einmal.',
+    statsTitle:     'Mitarbeiterstatistik',
+    statsToggle:    '📊 Statistikbereich anzeigen',
+    selModeLabel:   '⬜ Auswahlmodus',
+    selCellsLabel:  'Zellen ausgewählt',
+    btnApplyBulk:   '✔ Auf alle ausgewählten anwenden',
+    btnClearSel:    '✖ Auswahl aufheben',
+    btnExitSel:     '✖ Beenden',
+    helpTitle:      '📖 Vollständige Benutzeranleitung — v4',
+    helpContent:    getHelpContent('de'),
+  }
+};
+
+function getHelpContent(lang) {
+  const de = lang === 'de';
+  return `
+  <h3>${de?'Schritt 1: Monat einrichten':'Step 1: Set Up the Month'}</h3>
+  ${de?'Wählen Sie den Planungsmonat. Wochenenden und <strong>österreichische Feiertage</strong> werden automatisch erkannt. Passen Sie die <strong>Tagesgenauen Zielwerte</strong> für 8E, 8M, 8L, 13H und 6H an.':'Select your planning month. Weekends and <strong>Austrian National Holidays</strong> are detected automatically. Adjust the <strong>Master Targets</strong> to set exact daily counts for 8E, 8M, 8L, 13H, and 6H.'}
+  <div style="margin:8px 0;padding:8px 10px;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;font-size:12px;">
+    <strong>${de?'⚙️ 13H und 6H aktivieren/deaktivieren:':'⚙️ Enable / Disable 13H and 6H shifts:'}</strong><br>
+    ${de?'Verwenden Sie die Kontrollkästchen im Setup-Bereich. Wenn deaktiviert: Spalte verschwindet, Auto-Befüllung überspringt diesen Dienst.':'Use the checkboxes in the Setup panel. When off: the column disappears from the table and Auto-Fill never assigns that shift type.'}
+  </div>
+  <div style="margin:8px 0;padding:8px 10px;background:#f0faf0;border:1px solid #a5d6a7;border-radius:4px;font-size:12px;">
+    <strong>${de?'⚖️ 8L vs 8M Gerechtigkeit (IR2 vs IR3/IR4):':'⚖️ 8L vs 8M fairness (IR2 vs IR3/IR4):'}</strong><br>
+    ${de?'<strong>8L (14:00–22:30)</strong> = Zimmer IR2 — härterer Spätdienst bis 22:30.<br><strong>8M (11:30–20:00)</strong> = Zimmer IR3/IR4 — Spätdienst bis 20:00.<br>Jeder Mitarbeiter bekommt pro Woche ~2–3 Spätdienste (8L oder 8M) und ~2–3 Frühdienste. Die Fußzeile zeigt die Aufteilung als <code>XL / YM</code>.':'<strong>8L (14:00–22:30)</strong> = IR2 room — harder late shift ending at 22:30.<br><strong>8M (11:30–20:00)</strong> = IR3/IR4 rooms — somewhat easier late shift ending at 20:00.<br>Each worker gets ~2–3 late shifts (8L or 8M) and ~2–3 early shifts per week. The footer shows the split as <code>XL / YM</code>.'}
+  </div>
+
+  <h3>${de?'Schritt 2: Mitarbeiter hinzufügen &amp; bearbeiten':'Step 2: Add &amp; Edit Workers'}</h3>
+  <strong>${de?'System — Neu vs. Alt:':'System — New vs Old:'}</strong>
+  <ul>
+    <li><strong>${de?'Neu':'New'}</strong> — ${de?'Flexibles wöchentliches Stundenziel, wechselnde Hoch-/Niedrigwochen. Mischt 8E, 8L, 8M, 13H und 6H. Pro Woche ~2–3 Spät- und ~2–3 Frühdienste.':'Flexible weekly hour target, alternating high/low weeks. Mixes 8E, 8L, 8M, 13H and 6H. ~2–3 lates and ~2–3 earlies per week.'}</li>
+    <li><strong>${de?'Alt':'Old'}</strong> — ${de?'Strenge Rotation: eine volle Woche Frühdienste (8E), die nächste Woche Spätdienste (8L/8M), usw.':'Strict rotation: one full week of Early shifts (8E), the next full week Late (8L/8M), repeating.'}</li>
+    <li><strong>⚠️ ${de?'System hat keinen Effekt auf Immo-Mitarbeiter.':'System has no effect on Immo workers.'}</strong></li>
+  </ul>
+  <strong>${de?'Dienstpräferenz:':'Shift Preference:'}</strong>
+  <ul>
+    <li><strong>${de?'Gemischte Dienste':'Mixed Shifts'}</strong> — ${de?'Auto-Befüllung weist 8E, 8L, 8M, 13H und 6H frei zu, um Tagesziele zu erreichen.':'Auto-Fill assigns 8E, 8L, 8M, 13H and 6H freely to hit daily targets.'}</li>
+    <li><strong>${de?'Nur Frühdienst':'Early Only'}</strong> — ${de?'Nur 8E-Dienste.':'Only 8E shifts.'}</li>
+    <li><strong>${de?'Nur Spätdienst':'Late Only'}</strong> — ${de?'Nur 8L/8M-Dienste.':'Only 8L/8M shifts.'}</li>
+  </ul>
+  <strong>${de?'Immo-Rolle:':'Immo Role:'}</strong>
+  <ul>
+    <li><strong>${de?'Standard':'Standard'}</strong> — ${de?'Regulärer Stationsmitarbeiter.':'Regular ward worker.'}</li>
+    <li><strong>${de?'Festes Immo':'Fixed Immo'}</strong> — ${de?'Nur Immo-Dienste (ImE/ImL, Mo–Fr).':'Works in Immo only (ImE/ImL, Mon–Fri).'}</li>
+    <li><strong>${de?'Immo-Einspringer':'Immo Jump-in'}</strong> — ${de?'Regulärer Mitarbeiter, der bei Bedarf Immo abdeckt.':'Regular worker who covers Immo manually when needed.'}</li>
+  </ul>
+  ${de?'Um Einstellungen zu ändern: <strong>✏️-Symbol</strong> in der Spaltenüberschrift klicken.':'To change worker settings: click the <strong>✏️ button</strong> in the column header.'}
+
+  <h3>${de?'Schritt 3: Manuelle Daten eingeben':'Step 3: Enter Manual Data'}</h3>
+  ${de?'Tragen Sie Urlaub, Krankenstand und feste Dienste ein, bevor Sie die Auto-Befüllung starten.':'Enter VAC, SICK and fixed shifts before running Auto-Fill.'}
+
+  <h3>${de?'Schritt 4: Intelligente Auto-Befüllung ✨':'Step 4: Run Smart Auto-Fill ✨'}</h3>
+  ${de?'Berücksichtigt Ruhezeiten, verhindert Verstöße bei aufeinanderfolgenden Tagen und füllt Dienste gemäß Tageszielen auf.<br><strong>13H/6H:</strong> Werden nur zugewiesen wenn die entsprechenden Kontrollkästchen aktiviert sind.<br><strong>Fairness:</strong> Jede Woche erhält jeder "Neu"-System-Mitarbeiter ein Spätdienst-Kontingent (~40% der Wochendienste), damit niemand dauerhaft mehr Spätdienste hat.':'Balances rest times, prevents consecutive-day violations, and fills shifts to hit daily targets.<br><strong>13H/6H:</strong> Only assigned when the corresponding checkboxes are ticked.<br><strong>Fairness:</strong> Each week every "New" system worker is given a late-shift quota (~40% of their weekly shifts), so no one ends up with a disproportionate number of late shifts.'}
+
+  <h3>${de?'Schritt 5: Ansicht aktualisieren 🔄':'Step 5: Refresh Board 🔄'}</h3>
+  ${de?'Nach manuellen Änderungen <strong>Ansicht aktualisieren</strong> klicken.':'After any manual change click <strong>Refresh Board</strong>.'}
+
+  <h3>${de?'Schritt 6: Rückgängig &amp; Wiederholen ↩↪':'Step 6: Undo &amp; Redo ↩↪'}</h3>
+  ${de?'Jede Änderung ist rückgängig machbar (bis zu 20 Schritte). Strg+Z / Strg+Y.':'Every change is undoable (up to 20 steps). Ctrl+Z / Ctrl+Y.'}
+
+  <h3>${de?'Schritt 7: Mindestpersonal-Alarm 🔴':'Step 7: Minimum Staff Alarm 🔴'}</h3>
+  ${de?'Mindestwert in der Legende einstellen. Datumszelle wird rot, wenn der Wert unterschritten wird.':'Set Min Working Staff in the Legend. The date cell turns red when the count drops below it.'}
+
+  <h3>${de?'Schritt 8: Auswahlmodus ⬜':'Step 8: Select Mode ⬜'}</h3>
+  ${de?'Mehrere Zellen markieren und einen Dienst auf alle auf einmal anwenden. Jetzt auch mit Zimmer-Varianten (8E-IR2, 8M-IR3, etc.) in der Auswahlliste.':'Select multiple cells and apply one shift to all at once. Room variants (8E-IR2, 8M-IR3, etc.) are now available in the selection bar dropdown.'}
+
+  <h3>${de?'Schritt 9: Statistikbereich 📊':'Step 9: Worker Stats Panel 📊'}</h3>
+  ${de?'Aktivieren Sie "Statistikbereich anzeigen" für Stunden, Früh/Spät-Aufteilung, Urlaub, Krankenstand und maximale aufeinanderfolgende Tage.':'Tick Show Worker Stats Panel for hours, early/late split, vacation, sick and max consecutive days.'}
+
+  <h3>${de?'Schritt 10: Monatsvergleich 📆':'Step 10: Month Comparison 📆'}</h3>
+  ${de?'Zwei gespeicherte Monate nebeneinander vergleichen. Zeigt Stundenänderungen, Früh/Spät-Verschiebungen und jeden Dienst der sich unterscheidet.':'Compare any two saved months side by side — hours, early/late changes, and every shifted day.'}
+
+  <h3>${de?'Schritt 11: Zimmer zuweisen 🚪':'Step 11: Assign Rooms 🚪'}</h3>
+  ${de?'Dienst wie <code>8E</code> auf <code>8E-IR2</code> ändern, um die Zimmerspalten automatisch zu befüllen.':'Change a shift like <code>8E</code> to <code>8E-IR2</code> to populate the Room columns automatically.'}
+
+  <h3>${de?'Schritt 12: KI-Prüfung &amp; Tauschvorschläge 🤖':'Step 12: AI Check &amp; Swap Suggestions 🤖'}</h3>
+  ${de?'Überprüft Gerechtigkeit, Arbeitszeitverstöße, Unterbesetzung und Immo-Lücken. Schlägt konkrete Tausche vor.':'Checks fairness, labour law violations, understaffing and Immo gaps. Proposes specific swaps.'}
+
+  <h3>${de?'Schritt 13: LSS-Tag — Wer bekommt ihn? 📋':'Step 13: LSS Day — Choose Who Gets It 📋'}</h3>
+  ${de?'LSS-Kontrollkästchen öffnet ein Popup. Feste Immo-Mitarbeiter sind standardmäßig deaktiviert, damit ihre Immo-Dienste nicht überschrieben werden.':'LSS checkbox opens a popup. Fixed Immo workers are unchecked by default so their Immo shifts are never overwritten.'}
+
+  <h3>${de?'Schritt 14: Benutzerdefinierte Dienstzeiten ⏰':'Step 14: Custom Shift Hours ⏰'}</h3>
+  ${de?'Jede Zelle hat einen kleinen <strong style="color:#6c3483;">⏰</strong>-Knopf. Damit können Sie individuelle Start- und Endzeiten festlegen. Wenn der Dienst sowohl vor Mittag beginnt als auch nach 14:00 endet, wird er in beiden Spalten (8E und 8L) gezählt und mit <strong>★</strong> markiert.':'Every cell has a tiny <strong style="color:#6c3483;">⏰</strong> button. Set a custom start and end time. If the shift spans before noon and after 14:00, it counts in both 8E and 8L buckets and is marked ★.'}
+
+  <h3>${de?'Schritt 15: Sicherung, Wiederherstellung &amp; SharePoint 💾':'Step 15: Backup, Restore &amp; SharePoint 💾'}</h3>
+  ${de?'<strong>JSON-Sicherung</strong> speichert alle Daten. <strong>JSON wiederherstellen</strong> lädt sie neu.<br><strong>⬇️ Als HTML herunterladen:</strong> Erstellt eine eigenständige HTML-Datei mit eingebetteten aktuellen Daten — ideal zum Hochladen auf SharePoint.':'<strong>Backup JSON</strong> saves all data. <strong>Restore JSON</strong> reloads it.<br><strong>⬇️ Download as HTML:</strong> Creates a standalone file with your current data embedded — ideal for uploading to SharePoint.'}
+
+  <hr style="margin-top:20px;border:0;border-top:1px solid #eee;">
+  <p style="text-align:right;color:#888;font-style:italic;font-size:11px;">Created and Designed with ❤️ by Anis :) | v4 — EN/DE toggle, 6H toggle, Select Mode rooms, Fair weekly quota</p>`;
+}
+
+
+// ─────────────────────────────────────────────────────────
+//  Field Guide (translatable)
+// ─────────────────────────────────────────────────────────
+function getFieldGuide(lang) {
+    const de = lang === 'de';
+    return `
+<strong style="font-size:12px;">📋 ${de?'Feldbeschreibung':'Field Guide'}</strong><br>
+<strong>${de?'System — Neu vs. Alt:':'System — New vs Old:'}</strong><br>
+<span style="display:inline-block; margin-left:8px;">
+    <strong>${de?'Neu':'New'}</strong> = ${de?'Neueres Beschäftigungssystem — Auto-Befüllung nutzt ein <em>flexibles wöchentliches Stundenziel</em> (~2–3 Spät- und ~2–3 Frühdienste pro Woche).':'Newer employment system — Auto-Fill uses a <em>flexible weekly hour target</em> (~2–3 lates and ~2–3 earlies per week).'}<br>
+    <strong>${de?'Alt':'Old'}</strong> = ${de?'Älteres System — strikte Rotation: eine volle Woche Frühdienste (8E), die nächste Woche Spätdienste (8L/8M), usw. Kein 13H oder 6H.':'Older employment system — strict rotation: one full week Early (8E), next week Late (8L/8M), repeating. No 13H or 6H assigned.'}
+</span>
+<strong>⚠️ ${de?'System hat keinen Einfluss auf Immo-Mitarbeiter.':'System has no effect on Immo workers.'}</strong><br><br>
+
+<strong>${de?'Dienstpräferenz (nur Nicht-Immo-Mitarbeiter):':'Shift Preference (non-Immo workers only):'}</strong><br>
+<span style="display:inline-block; margin-left:8px;">
+    <strong>${de?'Gemischte Dienste':'Mixed Shifts'}</strong> = ${de?'Auto-Befüllung weist frei 8E, 8L, 8M (und 13H/6H wenn aktiv) zu, ~40% Spät, ~60% Früh.':'Auto-Fill freely assigns 8E, 8L, 8M (and 13H/6H when enabled), ~40% late, ~60% early.'}<br>
+    <strong>${de?'Nur Frühdienst':'Early Only'}</strong> = ${de?'Nur 8E-Dienste — nie ein Spät- oder Mitteldienst.':'Only 8E shifts — never a late or mid shift.'}<br>
+    <strong>${de?'Nur Spätdienst':'Late Only'}</strong> = ${de?'Nur 8L/8M-Dienste — nie ein Frühdienst.':'Only 8L/8M shifts — never an early.'}
+</span>
+
+<strong>${de?'Immo-Rolle:':'Immo Role:'}</strong><br>
+<span style="display:inline-block; margin-left:8px;">
+    <strong>${de?'Standard':'Standard'}</strong> = ${de?'Regulärer Stationsmitarbeiter, keine Immo-Beteiligung.':'Regular ward worker, no Immo involvement.'}<br>
+    <strong>${de?'Festes Immo':'Fixed Immo'}</strong> = ${de?'Arbeitet <em>nur</em> in der Immo (ImE 07:00–15:30 oder ImL 08:00–16:30). System und Dienstpräferenz werden ignoriert.':'Works in Immo <em>only</em> (ImE 07:00–15:30 or ImL 08:00–16:30). System and Shift Preference are ignored.'}<br>
+    <strong>${de?'Immo-Einspringer':'Immo Jump-in'}</strong> = ${de?'Regulärer Mitarbeiter. ImE/ImL manuell in der Tabelle zuweisen, wenn Immo Abdeckung benötigt.':'Regular worker. Manually assign ImE/ImL in the table when Immo needs cover.'}
+</span>
+
+<div style="margin-top:6px; padding:5px 7px; background:#f3e5ff; border-left:3px solid #6c3483; border-radius:0 3px 3px 0; font-size:11px;">
+    <strong style="color:#6c3483;">⏰ ${de?'Individuelle Dienstzeiten':'Custom Shift Hours'}</strong><br>
+    ${de?'Jede Zelle hat einen kleinen <strong>⏰</strong>-Knopf. Damit legen Sie individuelle Start- und Endzeiten fest. Übergreifende Dienste (vor Mittag und nach 14:00) zählen in <strong>beiden</strong> Spalten (8E und 8L) und werden mit <strong style="color:#6c3483;">★</strong> markiert.':'Every cell has a tiny <strong>⏰</strong> button. Set a custom start and end time. Shifts spanning both before noon and after 14:00 count in <strong>both</strong> 8E and 8L buckets and are marked <strong style="color:#6c3483;">★</strong>.'}
+</div>
+
+<div style="margin-top:6px; padding:5px 7px; background:#eaf0fb; border-left:3px solid #34495e; border-radius:0 3px 3px 0; font-size:11px;">
+    <strong style="color:#34495e;">📋 ${de?'LSS-Tag-Popup':'LSS Day Popup'}</strong><br>
+    ${de?'Das LSS-Kontrollkästchen öffnet ein Popup. Wählen Sie genau, welche Mitarbeiter an diesem Tag LSS erhalten. Feste Immo-Mitarbeiter sind standardmäßig deaktiviert.':'The LSS checkbox opens a popup. Choose exactly which workers get LSS that day. Fixed Immo workers are unchecked by default.'}
+</div>`;
+}
+
+function updateFieldGuide() {
+    const box = document.getElementById('fieldGuideBox');
+    if (box) box.innerHTML = getFieldGuide(currentLang);
+}
+
+function toggleLang() {
+    currentLang = currentLang === 'en' ? 'de' : 'en';
+    applyLang();
+    saveData();
+}
+
+function applyLang() {
+    const t = T[currentLang];
+    if (!t) return;
+
+    // Rebuild help content with current language
+    T.en.helpContent = getHelpContent('en');
+    T.de.helpContent = getHelpContent('de');
+
+    const set = (id, html, prop='innerHTML') => {
+        const el = document.getElementById(id);
+        if (el) { if (prop==='text') el.textContent = html; else el.innerHTML = html; }
+    };
+
+    set('pageTitle',     t.pageTitle,    'text');
+    set('langToggleBtn', t.langBtn);
+    set('p1title',       t.p1title,      'text');
+    set('p2title',       t.p2title,      'text');
+    set('p3title',       t.p3title,      'text');
+    set('monthLabel',    t.monthLabel);
+    set('targetsTitle',  t.targetsTitle, 'text');
+    set('wdLabel',       t.wdLabel,      'text');
+    set('weLabel',       t.weLabel,      'text');
+    set('immoTgtTitle',  t.immoTgtTitle);
+    set('immoTgtNote',   t.immoTgtNote.replace('\n','<br>'));
+    set('toggle13Hlabel',t.toggle13Hlabel);
+    set('toggle6Hlabel', t.toggle6Hlabel);
+    set('toggleShiftNote',t.toggleShiftNote,'text');
+    set('fairNote',      t.fairNote);
+    set('btnAutoFill',   t.btnAutoFill,  'text');
+    set('undoBtn',       t.undoBtn,      'text');
+    set('redoBtn',       t.redoBtn,      'text');
+    set('btnAI',         t.btnAI,        'text');
+    set('btnPersonal',   t.btnPersonal,  'text');
+    set('btnHelp',       t.btnHelp,      'text');
+    set('btnRefresh',    t.btnRefresh,   'text');
+    set('btnBackup',     t.btnBackup,    'text');
+    set('btnRestore',    t.btnRestore,   'text');
+    set('btnExcel',      t.btnExcel,     'text');
+    set('btnHTML',       t.btnHTML,      'text');
+    set('btnDiff',       t.btnDiff,      'text');
+    set('selectModeBtn', selectMode ? (currentLang==='de'?'✔ Auswahlmodus AN':'✔ Select Mode ON') : t.selectModeBtn, 'text');
+    set('btnClear',      t.btnClear,     'text');
+    set('lbl_name',      t.lbl_name,     'text');
+    set('lbl_sys',       t.lbl_sys,      'text');
+    set('lbl_con',       t.lbl_con,      'text');
+    set('lbl_pref',      t.lbl_pref,     'text');
+    set('lbl_immo',      t.lbl_immo,     'text');
+    set('opt_mixed',     t.opt_mixed,    'text');
+    set('opt_early',     t.opt_early,    'text');
+    set('opt_late',      t.opt_late,     'text');
+    set('opt_std',       t.opt_std,      'text');
+    set('opt_fimmo',     t.opt_fimmo,    'text');
+    set('opt_jimmo',     t.opt_jimmo,    'text');
+    set('lbl_fixedoff',  t.lbl_fixedoff);
+    set('btnAddWorker',  t.btnAddWorker, 'text');
+    set('btnClearAll',   t.btnClearAll,  'text');
+    set('lbl_maxvac',    t.lbl_maxvac);
+    set('lbl_vacnote',   t.lbl_vacnote,  'text');
+    set('lbl_maxcon',    t.lbl_maxcon);
+    set('lbl_minstaf',   t.lbl_minstaf);
+    set('lbl_minstafnote', t.lbl_minstafnote, 'text');
+    set('lbl_shortcuts', t.lbl_shortcuts);
+    set('statsTitle',    t.statsTitle,   'text');
+    set('selModeLabel',  t.selModeLabel, 'text');
+    set('selCellsLabel', t.selCellsLabel,'text');
+    set('btnApplyBulk',  t.btnApplyBulk, 'text');
+    set('btnClearSel',   t.btnClearSel,  'text');
+    set('btnExitSel',    t.btnExitSel,   'text');
+    set('helpTitle',     t.helpTitle,    'text');
+    set('helpContent',   t.helpContent);
+
+    // Stats toggle label
+    const stLbl = document.querySelector('label[for="statsToggle"]') ||
+                  document.querySelector('#statsToggle')?.closest('label');
+    if (stLbl) stLbl.innerHTML = `<input type="checkbox" id="statsToggle" onchange="toggleStatsPanel()"> ${t.statsToggle}`;
+
+    // Day-of-week abbreviations in Fixed Days Off checkboxes
+    const dow = currentLang==='de'
+        ? {mo:'Mo',tu:'Di',we:'Mi',th:'Do',fr:'Fr',sa:'Sa',su:'So'}
+        : {mo:'Mo',tu:'Tu',we:'We',th:'Th',fr:'Fr',sa:'Sa',su:'Su'};
+    ['mo','tu','we','th','fr','sa','su'].forEach(d => {
+        document.querySelectorAll(`.dow_${d}`).forEach(el => el.textContent = dow[d]);
+    });
+
+    // Translate month dropdown
+    const mSel = document.getElementById('monthPickerMonth');
+    if (mSel && t.months) {
+        const curVal = mSel.value;
+        mSel.innerHTML = t.months.map((name,i) =>
+            `<option value="${i+1}"${parseInt(curVal)===i+1?' selected':''}>${name}</option>`
+        ).join('');
+    }
+
+    // Translate field guide
+    updateFieldGuide();
+}
+
+// ─────────────────────────────────────────────────────────
+//  End of script
+// ─────────────────────────────────────────────────────────
+</script>
+</body>
+</html>
