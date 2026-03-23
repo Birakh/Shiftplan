@@ -196,8 +196,8 @@
             <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(this)">
         </div>
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
-        <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML (SharePoint)</button>
-        <button id="btnSPSync" style="background:#0078d4; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#006cbe'" onmouseout="this.style.background='#0078d4'" onclick="openSPModal()">☁️ SharePoint Sync</button>
+        <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML</button>
+        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="openSPModal()">🐙 GitHub Sync</button>
         <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
@@ -568,32 +568,36 @@
         <h2 id="helpTitle" style="color:#0056b3;">📖 A to Z User Guide — v4</h2>
         <div id="helpContent" style="line-height:1.6; font-size:13px;"></div>
 
-<!-- SharePoint Sync Modal -->
+<!-- GitHub Sync Modal -->
 <div id="spModal" class="modal">
-    <div class="modal-content" style="max-width:540px;">
+    <div class="modal-content" style="max-width:560px;">
         <span class="close-btn" onclick="closeSPModal()">&times;</span>
-        <h2 style="color:#0078d4;">☁️ SharePoint Sync</h2>
+        <h2 style="color:#24292f;">🐙 GitHub Sync</h2>
 
         <!-- Setup section -->
-        <div style="background:#f0f6ff; border:1px solid #c8dff8; border-radius:6px; padding:12px; margin-bottom:12px; font-size:12px;">
+        <div style="background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px; padding:12px; margin-bottom:12px; font-size:12px;">
             <strong style="font-size:13px;">⚙️ Connection Settings</strong>
             <div style="margin-top:8px; display:grid; gap:7px;">
                 <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">SharePoint Site URL</label>
-                    <input id="spSiteUrl" type="text" placeholder="https://company.sharepoint.com/sites/YourSite"
-                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
-                    <small style="color:#666;">Your team site URL — everything up to and including /sites/SiteName</small>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">GitHub Owner / Org</label>
+                    <input id="spSiteUrl" type="text" placeholder="e.g. myteam"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">Your GitHub username or organisation name</small>
                 </div>
                 <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Library / Folder Path</label>
-                    <input id="spFolderPath" type="text" placeholder="Shared Documents"
-                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
-                    <small style="color:#666;">Usually "Shared Documents". Include subfolders if needed: "Shared Documents/Dienstplan"</small>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Repository Name</label>
+                    <input id="spFolderPath" type="text" placeholder="e.g. shift-planner"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">The repo where you host the GitHub Pages site</small>
                 </div>
                 <div>
-                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">File Name</label>
-                    <input id="spFileName" type="text" placeholder="shiftplanner_data.json"
-                        style="width:200px; padding:6px; font-size:12px; border:1px solid #aac; border-radius:4px;">
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Personal Access Token (PAT)</label>
+                    <input id="spFileName" type="password" placeholder="ghp_xxxxxxxxxxxx"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">
+                        Create at <strong>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained</strong><br>
+                        Needs <em>Contents: Read &amp; Write</em> permission on this repo. Stored only in your browser's localStorage.
+                    </small>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <label style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:5px;">
@@ -601,17 +605,17 @@
                     </label>
                 </div>
             </div>
-            <button onclick="saveSPConfig()" style="margin-top:10px; background:#0078d4; color:white; border:none; padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Settings</button>
+            <button onclick="saveSPConfig()" style="margin-top:10px; background:#24292f; color:white; border:none; padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Settings</button>
             <button onclick="openSetPasswordModal()" style="margin-top:10px; margin-left:8px; background:#8e44ad; color:white; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔑 Change Password</button>
         </div>
 
         <!-- How it works -->
-        <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:10px; margin-bottom:12px; font-size:11px; line-height:1.6;">
-            <strong>📋 One-time setup in SharePoint:</strong><br>
-            1. Go to your SharePoint site → <strong>Documents</strong> library (or any library)<br>
-            2. That's it — no list creation needed. The planner saves a <code>.json</code> file directly into the library.<br>
-            3. Make sure all colleagues have <strong>Edit</strong> permission on the library.<br>
-            4. Everyone must open this HTML file while <strong>logged into SharePoint</strong> in the same browser.
+        <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:10px; margin-bottom:12px; font-size:11px; line-height:1.7;">
+            <strong>📋 One-time setup:</strong><br>
+            1. Create (or use your existing) GitHub repo — the same one hosting the GitHub Pages site.<br>
+            2. Each team member creates their own PAT with <em>Contents: Read &amp; Write</em> permission, enters it here, and saves.<br>
+            3. The planner saves <code>shiftplanner_data.json</code> and <code>shiftplanner_config.json</code> directly in the repo root.<br>
+            4. Everyone accesses the same shared schedule via the GitHub Pages link. ✅
         </div>
 
         <!-- Status -->
@@ -619,15 +623,15 @@
 
         <!-- Action buttons -->
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="spPull()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull from SharePoint</button>
-            <button onclick="spPush()" style="flex:1; background:#107c10; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push to SharePoint</button>
+            <button onclick="spPull()" style="flex:1; background:#0969da; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull from GitHub</button>
+            <button onclick="spPush()" style="flex:1; background:#1a7f37; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push to GitHub</button>
             <button onclick="spTestConnection()" style="background:#605e5c; color:white; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
         </div>
 
         <div style="margin-top:12px; padding:8px; background:#f8f8f8; border-radius:4px; font-size:11px; color:#555;">
-            <strong>Pull</strong> = download the shared version from SharePoint into your local session.<br>
-            <strong>Push</strong> = upload your current session to SharePoint so all colleagues see it.<br>
-            ⚠️ The last person to push wins — if two people push at the same time, the later one overwrites. Coordinate with your team, or use auto-sync with pull-before-push.
+            <strong>Pull</strong> = download the shared version from GitHub into your local session.<br>
+            <strong>Push</strong> = upload your current session to GitHub so all colleagues see it.<br>
+            ⚠️ Last push wins — coordinate with your team or use auto-sync (which pulls before pushing).
         </div>
     </div>
 </div>
@@ -671,10 +675,10 @@
         </div>
         <div id="setPwError" style="display:none; color:#c0392b; font-size:12px; margin-bottom:8px;"></div>
         <div style="display:flex; gap:8px;">
-            <button onclick="saveNewPassword()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:5px; font-size:13px; font-weight:bold; cursor:pointer;">💾 Save Password to SharePoint</button>
+            <button onclick="saveNewPassword()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:5px; font-size:13px; font-weight:bold; cursor:pointer;">💾 Save Password to GitHub</button>
             <button onclick="document.getElementById('setPasswordModal').style.display='none'" style="background:#95a5a6; color:white; border:none; padding:10px 14px; border-radius:5px; cursor:pointer;">Cancel</button>
         </div>
-        <p style="font-size:11px; color:#aaa; margin-top:10px;">The password hash is saved to <code>shiftplanner_config.json</code> on SharePoint. You must have SharePoint configured first.</p>
+        <p style="font-size:11px; color:#aaa; margin-top:10px;">The password hash is saved to <code>shiftplanner_config.json</code> in your GitHub repo. You must have GitHub sync configured first.</p>
     </div>
 </div>
 
@@ -739,13 +743,14 @@ let use13H = false;  // toggled via "Enable 13H" checkbox in Setup panel
 let use6H  = false;  // toggled via "Enable 6H"  checkbox in Setup panel
 let currentLang = 'en'; // 'en' or 'de'
 
-// SharePoint sync config (stored separately in localStorage, not per-month)
-let spConfig = { siteUrl:'', folderPath:'Shared Documents', fileName:'shiftplanner_data.json', autoSync:false };
+// GitHub sync config (stored separately in localStorage, not per-month)
+// owner = GitHub username/org, repo = repository name, token = PAT
+let spConfig = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
 
 // ── Edit-mode lock ──
 let isEditMode = false;   // false = view/comment only, true = full edit
-let pwHash     = null;    // SHA-256 hex of the password, loaded from SharePoint config
-let spCfgFile  = 'shiftplanner_config.json'; // config file name on SharePoint
+let pwHash     = null;    // SHA-256 hex of the password, loaded from GitHub config
+let spCfgFile  = 'shiftplanner_config.json'; // config file name in GitHub repo
 
 // Select-mode state
 let selectMode    = false;
@@ -930,7 +935,7 @@ function getHolidayName(dIndex) {
 window.onload = () => {
     allMonthsData = JSON.parse(localStorage.getItem('shiftPlannerAllMonthsV23')) || {};
 
-    // Load SharePoint config
+    // Load GitHub config
     const savedSPCfg = localStorage.getItem('shiftPlannerSPConfig');
     if (savedSPCfg) { try { spConfig = { ...spConfig, ...JSON.parse(savedSPCfg) }; } catch(e){} }
     // Apply initial lock state (always start locked)
@@ -999,8 +1004,8 @@ window.onload = () => {
     // Restore SP status bar if configured
     if (spConfig.siteUrl) {
         const lastSync = localStorage.getItem('shiftPlannerSPLastSync');
-        spSetStatus(`☁️ SP configured${lastSync ? ' · Last sync: ' + lastSync : ' · Not yet synced'}`, '#e6f3ff', '#0078d4');
-        // Load password hash from SharePoint config file
+        spSetStatus(`🐙 GitHub configured${lastSync ? ' · Last sync: ' + lastSync : ' · Not yet synced'}`, '#f6f8fa', '#24292f');
+        // Load password hash from GitHub config file
         spLoadConfig();
         if (spConfig.autoSync) {
             setTimeout(() => spPull(true), 800); // silent auto-pull on load
@@ -1176,7 +1181,7 @@ function saveData() {
         masterTargets, monthValue:currentMonthKey, maxVac, maxConsec, minStaff, use13H, use6H, currentLang
     };
     localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
-    // Auto-push to SharePoint if configured
+    // Auto-push to GitHub if configured
     if (spConfig.autoSync && spConfig.siteUrl) spPush(true);
 }
 
@@ -1514,11 +1519,13 @@ function closeLSSModal() {
 //  Custom Hours Modal
 // ─────────────────────────────────────────────────────────
 function openCustomHoursModal(wIndex, dIndex) {
+    if (!requireEdit("Custom Hours")) return;
     document.getElementById('cusWorkerIdx').value = wIndex;
     document.getElementById('cusDayIdx').value    = dIndex;
 
     // Pre-populate with current CUS values or shift defaults
     const cur = workers[wIndex].shifts[dIndex];
+    // Regex: CUS-HH:MM-HH:MM (stored as CUS-07:00-15:30)
     const m   = cur ? cur.match(/CUS-(\d{2}:\d{2})-(\d{2}:\d{2})/) : null;
     document.getElementById('cusStartTime').value = m ? m[1] : '07:00';
     document.getElementById('cusEndTime').value   = m ? m[2] : '15:30';
@@ -1549,7 +1556,6 @@ function updateCusOverlapInfo() {
 }
 
 function applyCustomHours() {
-    if (!requireEdit("Custom Hours")) return;
     const wIndex = parseInt(document.getElementById('cusWorkerIdx').value);
     const dIndex = parseInt(document.getElementById('cusDayIdx').value);
     const s = document.getElementById('cusStartTime').value;
@@ -1927,9 +1933,9 @@ function renderTable() {
                     ${getDropdownOptions(shift)}
                 </select>${cusLabel}
                 <div style="margin-top:2px; font-size:10px; display:flex; align-items:center; gap:4px;" class="no-print">
-                    <label><input type="checkbox" title="Special Request"
+                    <label title="Special Request"><input type="checkbox"
                         ${worker.requests[d]?'checked':''}
-                        onchange="updateRequest(${wIndex},${d},this.checked)"> 💬</label>
+                        onchange="updateRequest(${wIndex},${d},this.checked)"> ${worker.requests[d]?'⭐':'💬'}</label>
                     <button onclick="openCustomHoursModal(${wIndex},${d})" title="Set custom hours" style="padding:0px 3px; font-size:9px; background:#6c3483; color:white; border:none; border-radius:2px; cursor:pointer; line-height:1.3;">⏰</button>
                 </div>
             </td>`;
@@ -2744,7 +2750,7 @@ function downloadAsHTML() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert('✅ HTML file downloaded!\n\nOpen it in any browser — your current data is embedded.\nYou can upload this file directly to SharePoint.');
+    alert('✅ HTML file downloaded!\n\nOpen it in any browser — your current data is embedded.\nYou can also commit this file to your GitHub repo as a backup.');
 }
 
 
@@ -2840,8 +2846,8 @@ const T = {
     btnBackup:      '💾 Backup JSON',
     btnRestore:     '📂 Restore JSON',
     btnExcel:       '📋 Copy for Excel',
-    btnHTML:        '⬇️ Download as HTML (SharePoint)',
-    btnSPSync:      '☁️ SharePoint Sync',
+    btnHTML:        '⬇️ Download as HTML',
+    btnSPSync:      '🐙 GitHub Sync',
     btnDiff:        '📆 Month Comparison',
     selectModeBtn:  '⬜ Select Mode',
     btnClear:       '🗑️ Clear Month',
@@ -2902,8 +2908,8 @@ const T = {
     btnBackup:      '💾 JSON-Sicherung',
     btnRestore:     '📂 JSON wiederherstellen',
     btnExcel:       '📋 Für Excel kopieren',
-    btnHTML:        '⬇️ Als HTML herunterladen (SharePoint)',
-    btnSPSync:      '☁️ SharePoint-Synchronisation',
+    btnHTML:        '⬇️ Als HTML herunterladen',
+    btnSPSync:      '🐙 GitHub-Synchronisation',
     btnDiff:        '📆 Monatsvergleich',
     selectModeBtn:  '⬜ Auswahlmodus',
     btnClear:       '🗑️ Monat leeren',
@@ -3010,8 +3016,8 @@ function getHelpContent(lang) {
   <h3>${de?'Schritt 14: Benutzerdefinierte Dienstzeiten ⏰':'Step 14: Custom Shift Hours ⏰'}</h3>
   ${de?'Jede Zelle hat einen kleinen <strong style="color:#6c3483;">⏰</strong>-Knopf. Damit können Sie individuelle Start- und Endzeiten festlegen. Wenn der Dienst sowohl vor Mittag beginnt als auch nach 14:00 endet, wird er in beiden Spalten (8E und 8L) gezählt und mit <strong>★</strong> markiert.':'Every cell has a tiny <strong style="color:#6c3483;">⏰</strong> button. Set a custom start and end time. If the shift spans before noon and after 14:00, it counts in both 8E and 8L buckets and is marked ★.'}
 
-  <h3>${de?'Schritt 15: Sicherung, Wiederherstellung &amp; SharePoint 💾':'Step 15: Backup, Restore &amp; SharePoint 💾'}</h3>
-  ${de?'<strong>JSON-Sicherung</strong> speichert alle Daten. <strong>JSON wiederherstellen</strong> lädt sie neu.<br><strong>⬇️ Als HTML herunterladen:</strong> Erstellt eine eigenständige HTML-Datei mit eingebetteten aktuellen Daten — ideal zum Hochladen auf SharePoint.':'<strong>Backup JSON</strong> saves all data. <strong>Restore JSON</strong> reloads it.<br><strong>⬇️ Download as HTML:</strong> Creates a standalone file with your current data embedded — ideal for uploading to SharePoint.'}
+  <h3>${de?'Schritt 15: Sicherung, Wiederherstellung &amp; GitHub-Sync 💾':'Step 15: Backup, Restore &amp; GitHub Sync 💾'}</h3>
+  ${de?'<strong>JSON-Sicherung</strong> speichert alle Daten. <strong>JSON wiederherstellen</strong> lädt sie neu.<br><strong>🐙 GitHub-Sync:</strong> Geben Sie Ihren GitHub-Besitzer, Repo-Namen und ein Personal Access Token (PAT) ein. Alle können denselben Dienstplan über GitHub Pages teilen. Pull = Daten abrufen, Push = Daten hochladen.':'<strong>Backup JSON</strong> saves all data. <strong>Restore JSON</strong> reloads it.<br><strong>🐙 GitHub Sync:</strong> Enter your GitHub owner, repo name, and a Personal Access Token (PAT with Contents read/write). Everyone accesses the same schedule via GitHub Pages. Pull = fetch shared data, Push = upload your data.'}
 
   <hr style="margin-top:20px;border:0;border-top:1px solid #eee;">
   <p style="text-align:right;color:#888;font-style:italic;font-size:11px;">Created and Designed with ❤️ by Anis :) | v4 — EN/DE toggle, 6H toggle, Select Mode rooms, Fair weekly quota</p>`;
@@ -3257,59 +3263,95 @@ async function saveNewPassword() {
     if (!p1) { err.textContent = '⚠️ Password cannot be empty.'; err.style.display='block'; return; }
     if (p1 !== p2) { err.textContent = '⚠️ Passwords do not match.'; err.style.display='block'; return; }
     if (p1.length < 4) { err.textContent = '⚠️ Password must be at least 4 characters.'; err.style.display='block'; return; }
-    if (!spConfig.siteUrl) {
-        err.textContent = '⚠️ SharePoint is not configured. Set up SharePoint sync first (☁️ button), then set the password.';
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        err.textContent = '⚠️ GitHub is not configured. Set up GitHub sync first (🐙 button), then set the password.';
         err.style.display = 'block';
         return;
     }
     err.style.display = 'none';
     const hash = await sha256(p1);
-    // Save to SharePoint config file
+    // Save to GitHub config file
     try {
-        const digest = await spGetDigest();
-        const payload = JSON.stringify({ pwHash: hash, version: 1 });
-        const folderRel = spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '') + '/' + spConfig.folderPath;
-        const uploadUrl = `${spConfig.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${folderRel}')/Files/Add(url='${spCfgFile}', overwrite=true)`;
-        const r = await fetch(uploadUrl, {
-            method: 'POST', credentials: 'include',
-            headers: { 'Accept':'application/json;odata=verbose', 'X-RequestDigest':digest, 'Content-Type':'application/octet-stream' },
-            body: payload
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        await ghWriteFile(spCfgFile, JSON.stringify({ pwHash: hash, version: 1 }, null, 2));
         pwHash = hash;
         isEditMode = true;
         applyLockState();
         document.getElementById('setPasswordModal').style.display = 'none';
-        alert('✅ Password saved to SharePoint!\n\nYou are now in Edit Mode. Share the updated password with your team — they will need it to make shift changes.');
+        alert('✅ Password saved to GitHub!\n\nYou are now in Edit Mode. Share the password with your team — they will need it to make shift changes.');
     } catch(e) {
         err.textContent = `❌ Failed to save: ${e.message}`;
         err.style.display = 'block';
     }
 }
 
-// Load password hash from SharePoint config file
+// Load password hash from GitHub config file
 async function spLoadConfig() {
-    if (!spConfig.siteUrl) return;
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) return;
     try {
-        const folderRel = spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '') + '/' + spConfig.folderPath;
-        const fileUrl   = `${spConfig.siteUrl}/_api/web/GetFileByServerRelativeUrl('${folderRel}/${spCfgFile}')/$value`;
-        const r = await fetch(fileUrl, { credentials:'include', headers:{'Accept':'application/json'} });
-        if (r.status === 404) return; // no config yet — no password set
-        if (!r.ok) return;
-        const cfg = JSON.parse(await r.text());
+        const content = await ghReadFile(spCfgFile);
+        if (!content) return;
+        const cfg = JSON.parse(content);
         if (cfg.pwHash) pwHash = cfg.pwHash;
     } catch(e) { /* silent — config file may not exist yet */ }
 }
 
 // ─────────────────────────────────────────────────────────
-//  SharePoint Sync
+//  GitHub Sync  (replaces SharePoint)
+//  spConfig fields repurposed:
+//    siteUrl    → GitHub owner (username or org)
+//    folderPath → GitHub repo name
+//    fileName   → GitHub PAT (personal access token)
 // ─────────────────────────────────────────────────────────
 
+function ghApiUrl(file) {
+    return `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+}
+
+function ghHeaders() {
+    return {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${spConfig.fileName}`,
+        'X-GitHub-Api-Version': '2022-11-28'
+    };
+}
+
+// Read a file from GitHub → returns decoded text or null if not found
+async function ghReadFile(file) {
+    const r = await fetch(ghApiUrl(file), { headers: ghHeaders() });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    return atob(data.content.replace(/\n/g, ''));
+}
+
+// Write a file to GitHub (create or update)
+async function ghWriteFile(file, content, commitMsg) {
+    // First get the current SHA (needed for updates)
+    let sha = undefined;
+    try {
+        const r = await fetch(ghApiUrl(file), { headers: ghHeaders() });
+        if (r.ok) { const d = await r.json(); sha = d.sha; }
+    } catch(e) { /* file may not exist yet */ }
+
+    const body = {
+        message: commitMsg || `Shift Planner update · ${new Date().toISOString()}`,
+        content: btoa(unescape(encodeURIComponent(content)))
+    };
+    if (sha) body.sha = sha;
+
+    const r = await fetch(ghApiUrl(file), {
+        method: 'PUT',
+        headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`GitHub write ${r.status}: ${await r.text()}`);
+    return await r.json();
+}
+
 function openSPModal() {
-    // Populate form with current config
     document.getElementById('spSiteUrl').value    = spConfig.siteUrl    || '';
-    document.getElementById('spFolderPath').value = spConfig.folderPath || 'Shared Documents';
-    document.getElementById('spFileName').value   = spConfig.fileName   || 'shiftplanner_data.json';
+    document.getElementById('spFolderPath').value = spConfig.folderPath || '';
+    document.getElementById('spFileName').value   = spConfig.fileName   || '';
     document.getElementById('spAutoSync').checked = spConfig.autoSync   || false;
     spHideStatus();
     document.getElementById('spModal').style.display = 'block';
@@ -3320,16 +3362,18 @@ function closeSPModal() {
 }
 
 function saveSPConfig() {
-    if (!requireEdit("Change SharePoint Settings")) return;
+    if (!requireEdit("Change GitHub Settings")) return;
     spConfig = {
-        siteUrl:    document.getElementById('spSiteUrl').value.trim().replace(/\/$/, ''),
-        folderPath: document.getElementById('spFolderPath').value.trim().replace(/\/$/, '') || 'Shared Documents',
-        fileName:   document.getElementById('spFileName').value.trim() || 'shiftplanner_data.json',
+        siteUrl:    document.getElementById('spSiteUrl').value.trim(),
+        folderPath: document.getElementById('spFolderPath').value.trim(),
+        fileName:   document.getElementById('spFileName').value.trim(),
         autoSync:   document.getElementById('spAutoSync').checked
     };
     localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(spConfig));
     spShowModalStatus('✅ Settings saved!', '#e6ffe6', '#107c10');
-    spSetStatus(`☁️ SP configured · Not yet synced`, '#e6f3ff', '#0078d4');
+    spSetStatus(`🐙 GitHub configured · Not yet synced`, '#f6f8fa', '#24292f');
+    // Immediately load the password hash from GitHub with the new config
+    spLoadConfig();
 }
 
 function spSetStatus(msg, bg, color) {
@@ -3355,67 +3399,45 @@ function spHideStatus() {
     if (el) el.style.display = 'none';
 }
 
-// Get a fresh form digest (CSRF token) from SharePoint
-async function spGetDigest() {
-    const r = await fetch(`${spConfig.siteUrl}/_api/contextinfo`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' }
-    });
-    if (!r.ok) throw new Error(`Auth failed (${r.status}). Are you logged into SharePoint?`);
-    const data = await r.json();
-    return data.d.GetContextWebInformation.FormDigestValue;
-}
-
-// Build the server-relative file path
-function spFilePath() {
-    const site = new URL(spConfig.siteUrl);
-    const base = site.pathname.replace(/\/$/, ''); // e.g. /sites/MyTeam
-    return `${base}/${spConfig.folderPath}/${spConfig.fileName}`;
-}
-
-// Test connection
+// Test GitHub connection
 async function spTestConnection() {
-    if (!spConfig.siteUrl) { spShowModalStatus('⚠️ Please save settings first.', '#fff3cd', '#856404'); return; }
-    spShowModalStatus('🔌 Testing connection...', '#e6f3ff', '#0078d4');
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        spShowModalStatus('⚠️ Please fill in Owner, Repo, and PAT then save first.', '#fff3cd', '#856404');
+        return;
+    }
+    spShowModalStatus('🔌 Testing connection...', '#f6f8fa', '#24292f');
     try {
-        const r = await fetch(`${spConfig.siteUrl}/_api/web/title`, {
-            credentials: 'include',
-            headers: { 'Accept': 'application/json;odata=verbose' }
-        });
+        const r = await fetch(
+            `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}`,
+            { headers: ghHeaders() }
+        );
+        if (r.status === 401) throw new Error('Invalid token — check your PAT.');
+        if (r.status === 403) throw new Error('Forbidden — token lacks repo access.');
+        if (r.status === 404) throw new Error('Repo not found — check owner/repo name.');
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
-        const title = data.d.Title;
-        spShowModalStatus(`✅ Connected to: "${title}"`, '#e6ffe6', '#107c10');
+        spShowModalStatus(`✅ Connected to: ${data.full_name} (${data.private ? 'private' : 'public'})`, '#e6ffe6', '#107c10');
     } catch(e) {
         spShowModalStatus(`❌ Connection failed: ${e.message}`, '#ffe6e6', '#c0392b');
     }
 }
 
-// Pull from SharePoint → load into local session
+// Pull from GitHub → load into local session
 async function spPull(silent = false) {
-    if (!spConfig.siteUrl) {
-        if (!silent) spShowModalStatus('⚠️ Please configure SharePoint settings first.', '#fff3cd', '#856404');
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        if (!silent) spShowModalStatus('⚠️ Please configure GitHub settings first.', '#fff3cd', '#856404');
         return;
     }
-    if (!silent) spShowModalStatus('⬇️ Pulling from SharePoint...', '#e6f3ff', '#0078d4');
+    if (!silent) spShowModalStatus('⬇️ Pulling from GitHub...', '#f6f8fa', '#24292f');
     try {
-        const fileUrl = `${spConfig.siteUrl}/_api/web/GetFileByServerRelativeUrl('${spFilePath()}')/$value`;
-        const r = await fetch(fileUrl, {
-            credentials: 'include',
-            headers: { 'Accept': 'application/json' }
-        });
-
-        if (r.status === 404) {
+        const text = await ghReadFile('shiftplanner_data.json');
+        if (text === null) {
             if (!silent) spShowModalStatus('ℹ️ No shared file found yet. Push your data first to create it.', '#fff3cd', '#856404');
             return;
         }
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
-        const text = await r.text();
         const parsed = JSON.parse(text);
 
-        if (!silent && !confirm('⬇️ Pull from SharePoint?\n\nThis will REPLACE your current local data with the shared version.\n\nAny unsaved local changes will be lost. Continue?')) return;
+        if (!silent && !confirm('⬇️ Pull from GitHub?\n\nThis will REPLACE your current local data with the shared version.\n\nAny unsaved local changes will be lost. Continue?')) return;
 
         allMonthsData = parsed;
         localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
@@ -3426,49 +3448,36 @@ async function spPull(silent = false) {
 
         const msg = `✅ Pulled at ${now}`;
         if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
-        spSetStatus(`☁️ Pulled · ${now}`, '#e6ffe6', '#107c10');
+        spSetStatus(`🐙 Pulled · ${now}`, '#e6ffe6', '#107c10');
     } catch(e) {
         const msg = `❌ Pull failed: ${e.message}`;
         if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
-        spSetStatus(`⚠️ SP pull failed`, '#fff3cd', '#856404');
+        spSetStatus(`⚠️ GitHub pull failed`, '#fff3cd', '#856404');
     }
 }
 
-// Push local data → SharePoint
+// Push local data → GitHub
 async function spPush(silent = false) {
-    if (!spConfig.siteUrl) {
-        if (!silent) spShowModalStatus('⚠️ Please configure SharePoint settings first.', '#fff3cd', '#856404');
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        if (!silent) spShowModalStatus('⚠️ Please configure GitHub settings first.', '#fff3cd', '#856404');
         return;
     }
-    if (!silent) spShowModalStatus('⬆️ Pushing to SharePoint...', '#e6f3ff', '#0078d4');
+    if (!silent) spShowModalStatus('⬆️ Pushing to GitHub...', '#f6f8fa', '#24292f');
     try {
         saveData(); // ensure latest state is in allMonthsData
-        const digest  = await spGetDigest();
-        const payload = JSON.stringify(allMonthsData);
-        const uploadUrl = `${spConfig.siteUrl}/_api/web/GetFolderByServerRelativeUrl('${spConfig.siteUrl.replace(/^https?:\/\/[^/]+/, '')}/${spConfig.folderPath}')/Files/Add(url='${spConfig.fileName}', overwrite=true)`;
-
-        const r = await fetch(uploadUrl, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json;odata=verbose',
-                'X-RequestDigest': digest,
-                'Content-Type': 'application/octet-stream'
-            },
-            body: payload
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status} — ${await r.text()}`);
+        const payload = JSON.stringify(allMonthsData, null, 2);
+        await ghWriteFile('shiftplanner_data.json', payload, `Shift Planner update · ${new Date().toISOString()}`);
 
         const now = new Date().toLocaleString();
         localStorage.setItem('shiftPlannerSPLastSync', now);
 
         const msg = `✅ Pushed at ${now}`;
         if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
-        spSetStatus(`☁️ Pushed · ${now}`, '#e6ffe6', '#107c10');
+        spSetStatus(`🐙 Pushed · ${now}`, '#e6ffe6', '#107c10');
     } catch(e) {
         const msg = `❌ Push failed: ${e.message}`;
         if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
-        if (!silent) spSetStatus(`⚠️ SP push failed`, '#fff3cd', '#856404');
+        if (!silent) spSetStatus(`⚠️ GitHub push failed`, '#fff3cd', '#856404');
     }
 }
 
