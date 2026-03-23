@@ -3250,13 +3250,10 @@ function toggleLock() {
     } else {
         // Try to unlock
         if (!pwHash) {
-            // No password set yet — offer to set one
-            if (confirm('No editor password is set yet.\n\nClick OK to set a password, or Cancel to enter edit mode without a password (not recommended for shared use).')) {
-                openSetPasswordModal();
-            } else {
-                isEditMode = true;
-                applyLockState();
-            }
+            // No password set yet — go straight into edit mode with a status bar tip
+            isEditMode = true;
+            applyLockState();
+            spSetStatus('🔓 Edit Mode — no password set yet. Use 🐙 GitHub Sync → 🔑 Change Password to protect editing.', '#fffbe6', '#856404');
         } else {
             document.getElementById('unlockInput').value = '';
             document.getElementById('unlockError').style.display = 'none';
@@ -3412,7 +3409,7 @@ function closeSPModal() {
 }
 
 function saveSPConfig() {
-    if (!requireEdit("Change GitHub Settings")) return;
+    // GitHub config can always be saved — it's needed for first-time setup
     spConfig = {
         siteUrl:    document.getElementById('spSiteUrl').value.trim(),
         folderPath: document.getElementById('spFolderPath').value.trim(),
