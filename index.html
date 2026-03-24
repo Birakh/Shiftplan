@@ -197,7 +197,7 @@
         </div>
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
         <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML</button>
-        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="openSPModal()">🐙 GitHub Sync</button>
+        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="ghIsReady() ? openSPModal() : openSetupPopup()">🐙 GitHub Sync</button>
         <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
@@ -569,7 +569,7 @@
         <div id="helpContent" style="line-height:1.6; font-size:13px;"></div>
 
 <!-- ═══ FIRST-RUN SETUP POPUP ═══ -->
-<div id="setupPopup" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center;">
+<div id="setupPopup" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
     <div style="background:white; border-radius:12px; padding:32px; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
         <div style="text-align:center; margin-bottom:20px;">
             <div style="font-size:40px; margin-bottom:8px;">🐙</div>
@@ -3410,7 +3410,7 @@ function openSetupPopup(force) {
     document.getElementById('setup_token').value = ghConfig.token || '';
     document.getElementById('setup_error').style.display  = 'none';
     document.getElementById('setup_status').style.display = 'none';
-    el.style.display = 'flex';
+    el.style.display = 'flex';   // ← flex so the centering works
     setTimeout(() => {
         const first = !ghConfig.owner ? 'setup_owner' : !ghConfig.repo ? 'setup_repo' : 'setup_token';
         document.getElementById(first).focus();
