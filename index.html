@@ -107,7 +107,11 @@
             line-height: 1.1; border-radius: 2px; margin-left: 1px; cursor: pointer;
             background-color: #f0f0f0 !important; color: #666 !important; border: 1px solid #bbb !important; }
         .btn-delete-worker:hover { background-color: #ddd !important; color: #111 !important; }
-    </style>
+    
+        /* 13H and 6H wrapper spans — greyed out until enabled */
+        #wd13wrap, #we13wrap { opacity: 0.35; }
+        #wd6wrap,  #we6wrap  { opacity: 0.35; }
+        </style>
 </head>
 <body>
 
@@ -197,7 +201,7 @@
         </div>
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
         <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML</button>
-        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="ghIsReady() ? openSPModal() : openSetupPopup()">🐙 GitHub Sync</button>
+        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="(spConfig&&spConfig.siteUrl)?openSPModal():openSetupPopup()">🐙 GitHub Sync</button>
         <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
@@ -568,113 +572,105 @@
         <h2 id="helpTitle" style="color:#0056b3;">📖 A to Z User Guide — v4</h2>
         <div id="helpContent" style="line-height:1.6; font-size:13px;"></div>
 
-<!-- ═══ FIRST-RUN SETUP POPUP ═══ -->
-<div id="setupPopup" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:12px; padding:32px; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-        <div style="text-align:center; margin-bottom:20px;">
-            <div style="font-size:40px; margin-bottom:8px;">🐙</div>
-            <h2 style="margin:0; color:#24292f; font-size:20px;">Connect to GitHub</h2>
-            <p style="color:#666; font-size:13px; margin:8px 0 0 0;">Enter your details once — saved in this browser. Everyone on your team does this once on their own device.</p>
-        </div>
-
-        <div style="display:grid; gap:14px;">
-            <div>
-                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px; color:#24292f;">GitHub Username / Org</label>
-                <input id="setup_owner" type="text" placeholder="e.g.  myusername"
-                    style="width:100%; box-sizing:border-box; padding:10px; font-size:14px; border:2px solid #ddd; border-radius:6px; outline:none;"
-                    onfocus="this.style.borderColor='#0969da'" onblur="this.style.borderColor='#ddd'">
-            </div>
-            <div>
-                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px; color:#24292f;">Repository Name</label>
-                <input id="setup_repo" type="text" placeholder="e.g.  shift-planner"
-                    style="width:100%; box-sizing:border-box; padding:10px; font-size:14px; border:2px solid #ddd; border-radius:6px; outline:none;"
-                    onfocus="this.style.borderColor='#0969da'" onblur="this.style.borderColor='#ddd'">
-            </div>
-            <div>
-                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px; color:#24292f;">Personal Access Token (PAT)</label>
-                <input id="setup_token" type="password" placeholder="github_pat_... or ghp_..."
-                    style="width:100%; box-sizing:border-box; padding:10px; font-size:14px; border:2px solid #ddd; border-radius:6px; outline:none;"
-                    onfocus="this.style.borderColor='#0969da'" onblur="this.style.borderColor='#ddd'"
-                    onkeydown="if(event.key==='Enter') saveSetupAndConnect()">
-                <div style="font-size:11px; color:#888; margin-top:4px; line-height:1.5;">
-                    GitHub → Settings → Developer settings → Personal access tokens → Fine-grained<br>
-                    Set <strong>Contents: Read &amp; Write</strong> on this repo.
-                </div>
-            </div>
-        </div>
-
-        <div id="setup_error" style="display:none; background:#fff0f0; border:1px solid #f5c6cb; border-radius:5px; padding:8px 12px; font-size:12px; color:#c0392b; margin-top:12px;"></div>
-        <div id="setup_status" style="display:none; background:#e6ffe6; border:1px solid #a9dfbf; border-radius:5px; padding:8px 12px; font-size:12px; color:#1a7f37; margin-top:12px;"></div>
-
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="saveSetupAndConnect()" id="setup_btn"
-                style="flex:1; background:#0969da; color:white; border:none; padding:12px; border-radius:6px; font-size:15px; font-weight:bold; cursor:pointer;">
-                🔌 Connect &amp; Test
-            </button>
-            <button onclick="dismissSetupPopup()"
-                style="background:#f0f0f0; color:#555; border:none; padding:12px 16px; border-radius:6px; font-size:14px; cursor:pointer;">
-                Skip
-            </button>
-        </div>
-        <p style="font-size:11px; color:#aaa; text-align:center; margin:12px 0 0 0;">
-            Your token is stored only in <em>this browser</em> — never shared or committed.
-        </p>
-    </div>
-</div>
-
-<!-- GitHub Sync Modal (quick-access after first-run) -->
+<!-- GitHub Sync Modal -->
 <div id="spModal" class="modal">
-    <div class="modal-content" style="max-width:480px;">
+    <div class="modal-content" style="max-width:560px;">
         <span class="close-btn" onclick="closeSPModal()">&times;</span>
         <h2 style="color:#24292f;">🐙 GitHub Sync</h2>
 
-        <!-- Connection info row -->
-        <div id="ghConnectedBanner" style="display:none; background:#eaffea; border:1px solid #a9dfbf; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:12px; color:#1a7f37;">
-            ✅ Connected to <strong id="ghConnectedRepo"></strong>
-            <button onclick="openSetupPopup(true)" style="float:right; background:none; border:none; color:#0969da; cursor:pointer; font-size:12px; padding:0; font-weight:bold;">✏️ Change</button>
+        <!-- Setup section -->
+        <div style="background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px; padding:12px; margin-bottom:12px; font-size:12px;">
+            <strong style="font-size:13px;">⚙️ Connection Settings</strong>
+            <div style="margin-top:8px; display:grid; gap:7px;">
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">GitHub Owner / Org</label>
+                    <input id="spSiteUrl" type="text" placeholder="e.g. myteam"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">Your GitHub username or organisation name</small>
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Repository Name</label>
+                    <input id="spFolderPath" type="text" placeholder="e.g. shift-planner"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">The repo where you host the GitHub Pages site</small>
+                </div>
+                <div>
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Personal Access Token (PAT)</label>
+                    <input id="spFileName" type="password" placeholder="ghp_xxxxxxxxxxxx"
+                        style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <small style="color:#666;">
+                        Create at <strong>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained</strong><br>
+                        Needs <em>Contents: Read &amp; Write</em> permission on this repo. Stored only in your browser's localStorage.
+                    </small>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="spAutoSync"> Auto-sync on load &amp; save
+                    </label>
+                </div>
+            </div>
+            <button onclick="saveSPConfig()" style="margin-top:10px; background:#24292f; color:white; border:none; padding:6px 16px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Settings</button>
+            <button onclick="openSetPasswordModal()" style="margin-top:10px; margin-left:8px; background:#8e44ad; color:white; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔑 Change Password</button>
         </div>
-        <div id="ghNotConnectedBanner" style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:12px; color:#856404;">
-            ⚠️ Not connected yet.
-            <button onclick="openSetupPopup(true)" style="background:#0969da; color:white; border:none; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:12px; font-weight:bold; margin-left:8px;">⚙️ Set up now</button>
+
+        <!-- How it works -->
+        <div style="background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:10px; margin-bottom:12px; font-size:11px; line-height:1.7;">
+            <strong>📋 One-time setup:</strong><br>
+            1. Create (or use your existing) GitHub repo — the same one hosting the GitHub Pages site.<br>
+            2. Each team member creates their own PAT with <em>Contents: Read &amp; Write</em> permission, enters it here, and saves.<br>
+            3. The planner saves <code>shiftplanner_data.json</code> and <code>shiftplanner_config.json</code> directly in the repo root.<br>
+            4. Everyone accesses the same shared schedule via the GitHub Pages link. ✅
         </div>
 
         <!-- Status -->
         <div id="spModalStatus" style="display:none; padding:8px 10px; border-radius:4px; font-size:12px; margin-bottom:10px;"></div>
 
-        <!-- Shift data sync -->
-        <div style="background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px; padding:12px; margin-bottom:12px;">
-            <strong style="font-size:13px;">📅 Shift Data</strong>
-            <p style="font-size:11px; color:#666; margin:4px 0 10px 0;">Syncs workers, shifts, and settings. Requires edit mode to push.</p>
-            <div style="display:flex; gap:8px;">
-                <button onclick="spPull()" style="flex:1; background:#0969da; color:white; border:none; padding:9px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull</button>
-                <button onclick="spPush()" style="flex:1; background:#1a7f37; color:white; border:none; padding:9px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push</button>
-                <button onclick="spTestConnection()" style="background:#605e5c; color:white; border:none; padding:9px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
-            </div>
+        <!-- Action buttons -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="spPull()" style="flex:1; background:#0969da; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull from GitHub</button>
+            <button onclick="spPush()" style="flex:1; background:#1a7f37; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push to GitHub</button>
+            <button onclick="spTestConnection()" style="background:#605e5c; color:white; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
         </div>
 
-        <!-- Comment sync -->
-        <div style="background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:12px; margin-bottom:12px;">
-            <strong style="font-size:13px;">💬 Comments</strong>
-            <p style="font-size:11px; color:#666; margin:4px 0 10px 0;">Comments sync separately — works for all users in locked or edit mode.</p>
-            <div style="display:flex; gap:8px;">
-                <button onclick="cmtPull()" style="flex:1; background:#0969da; color:white; border:none; padding:9px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬇️ Pull</button>
-                <button onclick="cmtPush()" style="flex:1; background:#1a7f37; color:white; border:none; padding:9px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">⬆️ Push</button>
+        <div style="margin-top:12px; padding:8px; background:#f8f8f8; border-radius:4px; font-size:11px; color:#555;">
+            <strong>Pull</strong> = download the shared version from GitHub into your local session.<br>
+            <strong>Push</strong> = upload your current session to GitHub so all colleagues see it.<br>
+            ⚠️ Last push wins — coordinate with your team or use auto-sync (which pulls before pushing).
+        </div>
+
+        <!-- Comment Sync section — GitHub only, shared token embedded in HTML -->
+        <div style="margin-top:14px; background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:12px; font-size:12px;">
+            <strong style="font-size:13px;">💬 Comments Sync <span style="font-weight:normal; color:#27ae60; font-size:11px;">— GitHub only, no login needed for users</span></strong>
+            <p style="font-size:11px; color:#555; margin:6px 0 10px 0;">
+                Comments are stored in <code>shiftplanner_comments.json</code> in the same GitHub repo.<br>
+                Everyone can read &amp; write comments using a <strong>shared token embedded in the HTML</strong> — users need zero setup.
+            </p>
+
+            <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:4px; padding:8px; margin-bottom:10px; font-size:11px;">
+                <strong>⚙️ One-time admin setup:</strong><br>
+                1. Create a fine-grained PAT with <em>Contents: Read &amp; Write</em> on this repo<br>
+                2. Paste it into the <strong>Shared Comments Token</strong> field below and click Save<br>
+                3. Download the HTML (⬇️ button) and commit it to your repo — the token is now baked in<br>
+                4. Done! All users who open the page can read/write comments automatically ✅
+            </div>
+
+            <div style="margin-bottom:8px;">
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Shared Comments Token (PAT)</label>
+                <input id="cmtSharedToken" type="password" placeholder="ghp_xxxxxxxxxxxx (paste once, then re-download HTML)"
+                    style="width:100%; box-sizing:border-box; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                <small style="color:#666;">This token is embedded in the HTML file itself — not stored in localStorage. It can be read-only or read-write.</small>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <button onclick="saveSharedCommentToken()" style="background:#27ae60; color:white; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">💾 Save Token</button>
+                <button onclick="cmtPull()" style="background:#0969da; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">⬇️ Pull Comments</button>
+                <button onclick="cmtPush()" style="background:#1a7f37; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">⬆️ Push Comments</button>
+                <button onclick="cmtTest()" style="background:#605e5c; color:white; border:none; padding:6px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔌 Test</button>
             </div>
             <div id="cmtStatus" style="display:none; margin-top:8px; padding:6px 10px; border-radius:4px; font-size:11px;"></div>
-        </div>
-
-        <!-- Password -->
-        <div style="background:#f9f0ff; border:1px solid #d7b8f3; border-radius:6px; padding:10px 12px;">
-            <strong style="font-size:12px;">🔑 Editor Password</strong>
-            <p style="font-size:11px; color:#666; margin:4px 0 8px 0;">Protects shift editing. Saved to repo so all team members get it automatically.</p>
-            <button onclick="openSetPasswordModal()" style="background:#6c3483; color:white; border:none; padding:7px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🔑 Set / Change Password</button>
-        </div>
-
-        <div style="margin-top:10px; font-size:11px; color:#888; padding:6px 0;">
-            <strong>Auto-sync:</strong>
-            <label style="cursor:pointer; margin-left:6px;">
-                <input type="checkbox" id="spAutoSync" onchange="toggleAutoSync()"> Pull automatically on page load
-            </label>
+            <p style="font-size:10px; color:#888; margin:8px 0 0 0;">
+                💡 The shared token is embedded in the HTML — it will be visible in the page source. Use a <em>fine-grained token scoped only to this repo</em> to limit exposure. Rotate it anytime by repeating the setup above.
+            </p>
         </div>
     </div>
 </div>
@@ -723,6 +719,9 @@
         </div>
         <p style="font-size:11px; color:#aaa; margin-top:10px;">The password hash is saved to <code>shiftplanner_config.json</code> in your GitHub repo. You must have GitHub sync configured first.</p>
     </div>
+</div>
+
+</div>
 </div>
 
 <!-- LSS Day Modal -->
@@ -786,17 +785,15 @@ let use13H = false;  // toggled via "Enable 13H" checkbox in Setup panel
 let use6H  = false;  // toggled via "Enable 6H"  checkbox in Setup panel
 let currentLang = 'en'; // 'en' or 'de'
 
-// ── GitHub Sync config — one object, saved in localStorage per browser ──
-// owner = GitHub username/org
-// repo  = repository name
-// token = Personal Access Token (PAT) with Contents read+write
-let ghConfig = { owner:'', repo:'', token:'' };
+// GitHub sync config (stored separately in localStorage, not per-month)
+// owner = GitHub username/org, repo = repository name, token = PAT (personal per user)
+let spConfig = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
 
-// Keep spConfig as alias so existing code doesn't break
-let spConfig  = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
-
-// ── Comment Sync — same repo, same token ──
-let COMMENTS_SHARED_TOKEN = '';   // legacy — not used anymore
+// ── Comment Sync — uses a SHARED token embedded in the HTML ──
+// The admin sets this once. All users (locked or unlocked) can read/write
+// comments without any personal login or per-user setup.
+// File stored in same GitHub repo: shiftplanner_comments.json
+let COMMENTS_SHARED_TOKEN = ''; // ← Admin pastes their PAT here once, then re-uploads HTML to repo
 let commentSyncDebounceTimer = null;
 
 // ── Edit-mode lock ──
@@ -987,25 +984,9 @@ function getHolidayName(dIndex) {
 window.onload = () => {
     allMonthsData = JSON.parse(localStorage.getItem('shiftPlannerAllMonthsV23')) || {};
 
-    // Load GitHub config (new unified key first, fall back to old spConfig key)
-    const savedGH = localStorage.getItem('shiftPlannerGHConfig');
-    if (savedGH) {
-        try { ghConfig = { ...ghConfig, ...JSON.parse(savedGH) }; } catch(e){}
-    } else {
-        const savedSPCfg = localStorage.getItem('shiftPlannerSPConfig');
-        if (savedSPCfg) {
-            try {
-                const old = JSON.parse(savedSPCfg);
-                // migrate old spConfig fields → ghConfig
-                if (old.siteUrl) ghConfig.owner = old.siteUrl;
-                if (old.folderPath) ghConfig.repo  = old.folderPath;
-                if (old.fileName)   ghConfig.token = old.fileName;
-                if (old.autoSync !== undefined) spConfig.autoSync = old.autoSync;
-            } catch(e){}
-        }
-    }
-    // Keep spConfig in sync
-    spConfig = { siteUrl: ghConfig.owner, folderPath: ghConfig.repo, fileName: ghConfig.token, autoSync: spConfig.autoSync };
+    // Load GitHub config
+    const savedSPCfg = localStorage.getItem('shiftPlannerSPConfig');
+    if (savedSPCfg) { try { spConfig = { ...spConfig, ...JSON.parse(savedSPCfg) }; } catch(e){} }
     // Apply initial lock state (always start locked)
     applyLockState();
 
@@ -1069,18 +1050,15 @@ window.onload = () => {
     if (currentLang === 'de') applyLang();
     updateFieldGuide();
 
-    // Restore sync status bar / show first-run popup
-    if (ghIsReady()) {
+    // Restore SP status bar if configured
+    if (spConfig.siteUrl) {
         const lastSync = localStorage.getItem('shiftPlannerSPLastSync');
-        spSetStatus(`🐙 ${ghConfig.owner}/${ghConfig.repo}${lastSync ? ' · Last sync: ' + lastSync : ' · Not yet synced'}`, '#f6f8fa', '#24292f');
+        spSetStatus(`🐙 GitHub configured${lastSync ? ' · Last sync: ' + lastSync : ' · Not yet synced'}`, '#f6f8fa', '#24292f');
         // Load password hash from GitHub config file
         spLoadConfig();
         if (spConfig.autoSync) {
-            setTimeout(() => spPull(true), 800);
+            setTimeout(() => spPull(true), 800); // silent auto-pull on load
         }
-    } else {
-        // First visit — show setup popup after a short delay
-        setTimeout(() => openSetupPopup(), 600);
     }
 
     // Apply initial dim state for toggles (state is set by loadMonthData, but DOM
@@ -1253,7 +1231,7 @@ function saveData() {
     };
     localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
     // Auto-push to GitHub if configured
-    if (spConfig.autoSync && ghIsReady()) spPush(true);
+    if (spConfig.autoSync && spConfig.siteUrl) spPush(true);
 }
 
 function populateYearDropdown() {
@@ -1618,7 +1596,7 @@ function updateCusOverlapInfo() {
     const hrs = ((ehM - shM) / 60).toFixed(1);
     let info = `⏱ Duration: <strong>${hrs}h</strong> &nbsp;|&nbsp; `;
     if (ov.star) {
-        info += `⭐ <strong>Spans both Early &amp; Late</strong> — counted in <em>both</em> shift buckets`;
+        info += `⭐ <strong>Spans both Early & Late</strong> — counted in <em>both</em> shift buckets`;
     } else if (ov.early) {
         info += `🌅 Counts as <strong>Early shift</strong>`;
     } else {
@@ -1899,7 +1877,7 @@ function renderTable() {
         <th style="min-width:150px;">Room Warnings</th>
         <th style="min-width:90px; color:#c0392b;">🤒 Sick</th>
         <th style="min-width:90px; color:#8e44ad;">🏖 Vacation</th>
-        <th>💬 Daily Comments${ghIsReady() ? ' <span title=\'Comment sync ON\' style=\'color:#27ae60; font-size:10px;\'>●</span>' : ' <span title=\'Comment sync — connect to GitHub first\' style=\'color:#aaa; font-size:10px;\'>○</span>'}</th></tr>`;
+        <th>💬 Daily Comments${cmtReady() ? ' <span title=\'Comment sync ON\' style=\'color:#27ae60; font-size:10px;\'>●</span>' : ' <span title=\'Comment sync not configured — see 🐙 GitHub Sync\' style=\'color:#aaa; font-size:10px;\'>○</span>'}</th></tr>`;
     document.getElementById('tableHead').innerHTML = headHTML;
 
     // ── Body ──
@@ -2085,7 +2063,7 @@ function renderTable() {
             </td>
             <td style="vertical-align:middle;">
                 <input type="text" class="comment-input" data-day="${d}" placeholder="Type notes..."
-                    value="${(dailyComments[d]||'').replace(/"/g,'&quot;')}"
+                    value="${(dailyComments[d]||'').replace(/"/g,'"')}"
                     oninput="updateComment(${d},this.value)">
             </td></tr>`;
     }
@@ -3032,7 +3010,7 @@ function getHelpContent(lang) {
     ${de?'<strong>8L (14:00–22:30)</strong> = Zimmer IR2 — härterer Spätdienst bis 22:30.<br><strong>8M (11:30–20:00)</strong> = Zimmer IR3/IR4 — Spätdienst bis 20:00.<br>Jeder Mitarbeiter bekommt pro Woche ~2–3 Spätdienste (8L oder 8M) und ~2–3 Frühdienste. Die Fußzeile zeigt die Aufteilung als <code>XL / YM</code>.':'<strong>8L (14:00–22:30)</strong> = IR2 room — harder late shift ending at 22:30.<br><strong>8M (11:30–20:00)</strong> = IR3/IR4 rooms — somewhat easier late shift ending at 20:00.<br>Each worker gets ~2–3 late shifts (8L or 8M) and ~2–3 early shifts per week. The footer shows the split as <code>XL / YM</code>.'}
   </div>
 
-  <h3>${de?'Schritt 2: Mitarbeiter hinzufügen &amp; bearbeiten':'Step 2: Add &amp; Edit Workers'}</h3>
+  <h3>${de?'Schritt 2: Mitarbeiter hinzufügen & bearbeiten':'Step 2: Add & Edit Workers'}</h3>
   <strong>${de?'System — Neu vs. Alt:':'System — New vs Old:'}</strong>
   <ul>
     <li><strong>${de?'Neu':'New'}</strong> — ${de?'Flexibles wöchentliches Stundenziel, wechselnde Hoch-/Niedrigwochen. Mischt 8E, 8L, 8M, 13H und 6H. Pro Woche ~2–3 Spät- und ~2–3 Frühdienste.':'Flexible weekly hour target, alternating high/low weeks. Mixes 8E, 8L, 8M, 13H and 6H. ~2–3 lates and ~2–3 earlies per week.'}</li>
@@ -3062,7 +3040,7 @@ function getHelpContent(lang) {
   <h3>${de?'Schritt 5: Ansicht aktualisieren 🔄':'Step 5: Refresh Board 🔄'}</h3>
   ${de?'Nach manuellen Änderungen <strong>Ansicht aktualisieren</strong> klicken.':'After any manual change click <strong>Refresh Board</strong>.'}
 
-  <h3>${de?'Schritt 6: Rückgängig &amp; Wiederholen ↩↪':'Step 6: Undo &amp; Redo ↩↪'}</h3>
+  <h3>${de?'Schritt 6: Rückgängig & Wiederholen ↩↪':'Step 6: Undo & Redo ↩↪'}</h3>
   ${de?'Jede Änderung ist rückgängig machbar (bis zu 20 Schritte). Strg+Z / Strg+Y.':'Every change is undoable (up to 20 steps). Ctrl+Z / Ctrl+Y.'}
 
   <h3>${de?'Schritt 7: Mindestpersonal-Alarm 🔴':'Step 7: Minimum Staff Alarm 🔴'}</h3>
@@ -3080,7 +3058,7 @@ function getHelpContent(lang) {
   <h3>${de?'Schritt 11: Zimmer zuweisen 🚪':'Step 11: Assign Rooms 🚪'}</h3>
   ${de?'Dienst wie <code>8E</code> auf <code>8E-IR2</code> ändern, um die Zimmerspalten automatisch zu befüllen.':'Change a shift like <code>8E</code> to <code>8E-IR2</code> to populate the Room columns automatically.'}
 
-  <h3>${de?'Schritt 12: KI-Prüfung &amp; Tauschvorschläge 🤖':'Step 12: AI Check &amp; Swap Suggestions 🤖'}</h3>
+  <h3>${de?'Schritt 12: KI-Prüfung & Tauschvorschläge 🤖':'Step 12: AI Check & Swap Suggestions 🤖'}</h3>
   ${de?'Überprüft Gerechtigkeit, Arbeitszeitverstöße, Unterbesetzung und Immo-Lücken. Schlägt konkrete Tausche vor.':'Checks fairness, labour law violations, understaffing and Immo gaps. Proposes specific swaps.'}
 
   <h3>${de?'Schritt 13: LSS-Tag — Wer bekommt ihn? 📋':'Step 13: LSS Day — Choose Who Gets It 📋'}</h3>
@@ -3089,7 +3067,7 @@ function getHelpContent(lang) {
   <h3>${de?'Schritt 14: Benutzerdefinierte Dienstzeiten ⏰':'Step 14: Custom Shift Hours ⏰'}</h3>
   ${de?'Jede Zelle hat einen kleinen <strong style="color:#6c3483;">⏰</strong>-Knopf. Damit können Sie individuelle Start- und Endzeiten festlegen. Wenn der Dienst sowohl vor Mittag beginnt als auch nach 14:00 endet, wird er in beiden Spalten (8E und 8L) gezählt und mit <strong>★</strong> markiert.':'Every cell has a tiny <strong style="color:#6c3483;">⏰</strong> button. Set a custom start and end time. If the shift spans before noon and after 14:00, it counts in both 8E and 8L buckets and is marked ★.'}
 
-  <h3>${de?'Schritt 15: Sicherung, Wiederherstellung &amp; GitHub-Sync 💾':'Step 15: Backup, Restore &amp; GitHub Sync 💾'}</h3>
+  <h3>${de?'Schritt 15: Sicherung, Wiederherstellung & GitHub-Sync 💾':'Step 15: Backup, Restore & GitHub Sync 💾'}</h3>
   ${de?'<strong>JSON-Sicherung</strong> speichert alle Daten. <strong>JSON wiederherstellen</strong> lädt sie neu.<br><strong>🐙 GitHub-Sync:</strong> Geben Sie Ihren GitHub-Besitzer, Repo-Namen und ein Personal Access Token (PAT) ein. Alle können denselben Dienstplan über GitHub Pages teilen. Pull = Daten abrufen, Push = Daten hochladen.':'<strong>Backup JSON</strong> saves all data. <strong>Restore JSON</strong> reloads it.<br><strong>🐙 GitHub Sync:</strong> Enter your GitHub owner, repo name, and a Personal Access Token (PAT with Contents read/write). Everyone accesses the same schedule via GitHub Pages. Pull = fetch shared data, Push = upload your data.'}
 
   <hr style="margin-top:20px;border:0;border-top:1px solid #eee;">
@@ -3326,311 +3304,236 @@ function openSetPasswordModal() {
     setTimeout(() => document.getElementById('pw1').focus(), 100);
 }
 
+async function saveNewPassword() {
+    const p1 = document.getElementById('pw1').value;
+    const p2 = document.getElementById('pw2').value;
+    const err = document.getElementById('setPwError');
+    if (!p1) { err.textContent = '⚠️ Password cannot be empty.'; err.style.display='block'; return; }
+    if (p1 !== p2) { err.textContent = '⚠️ Passwords do not match.'; err.style.display='block'; return; }
+    if (p1.length < 4) { err.textContent = '⚠️ Password must be at least 4 characters.'; err.style.display='block'; return; }
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        err.textContent = '⚠️ GitHub is not configured. Set up GitHub sync first (🐙 button), then set the password.';
+        err.style.display = 'block';
+        return;
+    }
+    err.style.display = 'none';
+    const hash = await sha256(p1);
+    // Save to GitHub config file
+    try {
+        await ghWriteFile(spCfgFile, JSON.stringify({ pwHash: hash, version: 1 }, null, 2));
+        pwHash = hash;
+        isEditMode = true;
+        applyLockState();
+        document.getElementById('setPasswordModal').style.display = 'none';
+        alert('✅ Password saved to GitHub!\n\nYou are now in Edit Mode. Share the password with your team — they will need it to make shift changes.');
+    } catch(e) {
+        err.textContent = `❌ Failed to save: ${e.message}`;
+        err.style.display = 'block';
+    }
+}
 
+// Load password hash from GitHub config file
+async function spLoadConfig() {
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) return;
+    try {
+        const content = await ghReadFile(spCfgFile);
+        if (!content) return;
+        const cfg = JSON.parse(content);
+        if (cfg.pwHash) pwHash = cfg.pwHash;
+    } catch(e) { /* silent — config file may not exist yet */ }
+}
 
 // ─────────────────────────────────────────────────────────
-//  GitHub Sync — unified, single token per browser
+//  GitHub Sync  (replaces SharePoint)
+//  spConfig fields repurposed:
+//    siteUrl    → GitHub owner (username or org)
+//    folderPath → GitHub repo name
+//    fileName   → GitHub PAT (personal access token)
 // ─────────────────────────────────────────────────────────
 
-// ── helpers ──
-function ghIsReady() { return !!(ghConfig.owner && ghConfig.repo && ghConfig.token); }
+function ghApiUrl(file) {
+    return `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+}
 
-function _ghApiUrl(file) {
-    return `https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${file}`;
+function ghHeaders() {
+    return {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${spConfig.fileName}`,
+        'X-GitHub-Api-Version': '2022-11-28'
+    };
 }
-function _ghHeaders(tok) {
-    const t = tok || ghConfig.token;
-    return { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${t}`, 'X-GitHub-Api-Version':'2022-11-28' };
-}
+
+// Read a file from GitHub → returns decoded text or null if not found
 async function ghReadFile(file) {
-    const r = await fetch(_ghApiUrl(file), { headers: _ghHeaders() });
+    const r = await fetch(ghApiUrl(file), { headers: ghHeaders() });
     if (r.status === 404) return null;
-    if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json()).message || await r.text()}`);
-    const d = await r.json();
-    return decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    // UTF-8-safe decode to match btoa(unescape(encodeURIComponent(str))) on write
+    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
 }
-async function ghWriteFile(file, content, msg) {
-    let sha;
-    try { const r = await fetch(_ghApiUrl(file), { headers:_ghHeaders() }); if (r.ok) sha = (await r.json()).sha; } catch(e){}
-    const body = { message: msg || `Shift Planner · ${new Date().toISOString()}`, content: btoa(unescape(encodeURIComponent(content))) };
+
+// Write a file to GitHub (create or update)
+async function ghWriteFile(file, content, commitMsg) {
+    // First get the current SHA (needed for updates)
+    let sha = undefined;
+    try {
+        const r = await fetch(ghApiUrl(file), { headers: ghHeaders() });
+        if (r.ok) { const d = await r.json(); sha = d.sha; }
+    } catch(e) { /* file may not exist yet */ }
+
+    const body = {
+        message: commitMsg || `Shift Planner update · ${new Date().toISOString()}`,
+        content: btoa(unescape(encodeURIComponent(content)))
+    };
     if (sha) body.sha = sha;
-    const r = await fetch(_ghApiUrl(file), { method:'PUT', headers:{..._ghHeaders(),'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error(`GitHub write ${r.status}: ${(await r.json()).message || await r.text()}`);
+
+    const r = await fetch(ghApiUrl(file), {
+        method: 'PUT',
+        headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`GitHub write ${r.status}: ${await r.text()}`);
     return await r.json();
 }
-// aliases used by old code that referenced spConfig fields
-function ghApiUrl(file) { return _ghApiUrl(file); }
-function ghHeaders()    { return _ghHeaders(); }
-async function ghReadFileWith(file, tok)               { return ghReadFile(file); }
-async function ghWriteFileWith(file, content, tok, msg){ return ghWriteFile(file, content, msg); }
 
-// ── First-run setup popup ──
-function openSetupPopup(force) {
-    const el = document.getElementById('setupPopup');
-    if (!el) return;
-    document.getElementById('setup_owner').value = ghConfig.owner || '';
-    document.getElementById('setup_repo').value  = ghConfig.repo  || '';
-    document.getElementById('setup_token').value = ghConfig.token || '';
-    document.getElementById('setup_error').style.display  = 'none';
-    document.getElementById('setup_status').style.display = 'none';
-    el.style.display = 'flex';   // ← flex so the centering works
-    setTimeout(() => {
-        const first = !ghConfig.owner ? 'setup_owner' : !ghConfig.repo ? 'setup_repo' : 'setup_token';
-        document.getElementById(first).focus();
-    }, 100);
-}
-function dismissSetupPopup() {
-    const el = document.getElementById('setupPopup');
-    if (el) el.style.display = 'none';
-}
-async function saveSetupAndConnect() {
-    const owner = document.getElementById('setup_owner').value.trim();
-    const repo  = document.getElementById('setup_repo').value.trim();
-    const token = document.getElementById('setup_token').value.trim();
-    const errEl = document.getElementById('setup_error');
-    const stEl  = document.getElementById('setup_status');
-    errEl.style.display = 'none';
-    stEl.style.display  = 'none';
-
-    if (!owner || !repo || !token) {
-        errEl.textContent = '⚠️ Please fill in all three fields.';
-        errEl.style.display = 'block'; return;
-    }
-    // Test
-    const btn = document.getElementById('setup_btn');
-    btn.textContent = '⏳ Testing...'; btn.disabled = true;
-    try {
-        const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-            headers: { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${token}`, 'X-GitHub-Api-Version':'2022-11-28' }
-        });
-        if (r.status === 401) throw new Error('Invalid token — check your PAT.');
-        if (r.status === 404) throw new Error('Repository not found — check owner and repo name.');
-        if (!r.ok) throw new Error(`GitHub error ${r.status}`);
-        const data = await r.json();
-
-        // Save
-        ghConfig = { owner, repo, token };
-        spConfig  = { siteUrl: owner, folderPath: repo, fileName: token, autoSync: spConfig.autoSync };
-        localStorage.setItem('shiftPlannerGHConfig', JSON.stringify(ghConfig));
-        localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(spConfig));
-
-        stEl.textContent = `✅ Connected to ${data.full_name}! Loading data...`;
-        stEl.style.display = 'block';
-        btn.textContent = '✅ Connected!';
-
-        // Load password hash + auto-pull
-        await spLoadConfig();
-        refreshSPModal();
-        setTimeout(async () => {
-            dismissSetupPopup();
-            await spPull(true);
-        }, 1200);
-    } catch(e) {
-        errEl.textContent = `❌ ${e.message}`;
-        errEl.style.display = 'block';
-        btn.textContent = '🔌 Connect & Test'; btn.disabled = false;
-    }
-}
-
-// ── Sync modal ──
 function openSPModal() {
-    refreshSPModal();
-    document.getElementById('spAutoSync').checked = spConfig.autoSync || false;
+    document.getElementById('spSiteUrl').value    = spConfig.siteUrl    || '';
+    document.getElementById('spFolderPath').value = spConfig.folderPath || '';
+    document.getElementById('spFileName').value   = spConfig.fileName   || '';
+    document.getElementById('spAutoSync').checked = spConfig.autoSync   || false;
+    // Show current shared token (masked) in comment section
+    const cmtField = document.getElementById('cmtSharedToken');
+    if (cmtField) cmtField.value = COMMENTS_SHARED_TOKEN || '';
+    const cmtEl = document.getElementById('cmtStatus');
+    if (cmtEl) cmtEl.style.display = 'none';
     spHideStatus();
     document.getElementById('spModal').style.display = 'block';
 }
-function closeSPModal() { document.getElementById('spModal').style.display = 'none'; }
 
-function refreshSPModal() {
-    const conn = document.getElementById('ghConnectedBanner');
-    const notConn = document.getElementById('ghNotConnectedBanner');
-    const repoLbl = document.getElementById('ghConnectedRepo');
-    if (ghIsReady()) {
-        if (conn)    { conn.style.display = 'block'; }
-        if (notConn) { notConn.style.display = 'none'; }
-        if (repoLbl) repoLbl.textContent = `${ghConfig.owner}/${ghConfig.repo}`;
-    } else {
-        if (conn)    { conn.style.display = 'none'; }
-        if (notConn) { notConn.style.display = 'block'; }
-    }
+function closeSPModal() {
+    document.getElementById('spModal').style.display = 'none';
 }
 
-function toggleAutoSync() {
-    spConfig.autoSync = document.getElementById('spAutoSync').checked;
-    localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(spConfig));
-}
-
-// saveSPConfig kept for compatibility (no longer used by UI but may be called internally)
 function saveSPConfig() {
-    spConfig = { siteUrl: ghConfig.owner, folderPath: ghConfig.repo, fileName: ghConfig.token, autoSync: spConfig.autoSync };
+    // GitHub config can always be saved — it's needed for first-time setup
+    spConfig = {
+        siteUrl:    document.getElementById('spSiteUrl').value.trim(),
+        folderPath: document.getElementById('spFolderPath').value.trim(),
+        fileName:   document.getElementById('spFileName').value.trim(),
+        autoSync:   document.getElementById('spAutoSync').checked
+    };
     localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(spConfig));
     spShowModalStatus('✅ Settings saved!', '#e6ffe6', '#107c10');
     spSetStatus(`🐙 GitHub configured · Not yet synced`, '#f6f8fa', '#24292f');
+    // Immediately load the password hash from GitHub with the new config
     spLoadConfig();
 }
 
 function spSetStatus(msg, bg, color) {
     const bar = document.getElementById('spStatusBar');
     if (!bar) return;
-    bar.textContent = msg; bar.style.background = bg; bar.style.color = color; bar.style.display = 'block';
+    bar.textContent = msg;
+    bar.style.background = bg;
+    bar.style.color = color;
+    bar.style.display = 'block';
 }
+
 function spShowModalStatus(msg, bg, color) {
     const el = document.getElementById('spModalStatus');
     if (!el) return;
-    el.textContent = msg; el.style.background = bg; el.style.color = color; el.style.display = 'block';
+    el.textContent = msg;
+    el.style.background = bg;
+    el.style.color = color;
+    el.style.display = 'block';
 }
+
 function spHideStatus() {
     const el = document.getElementById('spModalStatus');
     if (el) el.style.display = 'none';
 }
 
-// ── Test connection ──
+// Test GitHub connection
 async function spTestConnection() {
-    if (!ghIsReady()) { spShowModalStatus('⚠️ Not configured — click "Set up now".', '#fff3cd', '#856404'); return; }
-    spShowModalStatus('🔌 Testing...', '#f6f8fa', '#24292f');
-    try {
-        const r = await fetch(`https://api.github.com/repos/${ghConfig.owner}/${ghConfig.repo}`, { headers: _ghHeaders() });
-        if (r.status === 401) throw new Error('Invalid token');
-        if (r.status === 404) throw new Error('Repo not found');
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const d = await r.json();
-        spShowModalStatus(`✅ Connected to ${d.full_name}`, '#e6ffe6', '#107c10');
-    } catch(e) { spShowModalStatus(`❌ ${e.message}`, '#ffe6e6', '#c0392b'); }
-}
-
-// ── Pull shift data ──
-async function spPull(silent = false) {
-    if (!ghIsReady()) {
-        if (!silent) { openSPModal(); spShowModalStatus('⚠️ Please connect to GitHub first.', '#fff3cd', '#856404'); }
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        spShowModalStatus('⚠️ Please fill in Owner, Repo, and PAT then save first.', '#fff3cd', '#856404');
         return;
     }
-    if (!silent) spShowModalStatus('⬇️ Pulling...', '#f6f8fa', '#24292f');
+    spShowModalStatus('🔌 Testing connection...', '#f6f8fa', '#24292f');
+    try {
+        const r = await fetch(
+            `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}`,
+            { headers: ghHeaders() }
+        );
+        if (r.status === 401) throw new Error('Invalid token — check your PAT.');
+        if (r.status === 403) throw new Error('Forbidden — token lacks repo access.');
+        if (r.status === 404) throw new Error('Repo not found — check owner/repo name.');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        spShowModalStatus(`✅ Connected to: ${data.full_name} (${data.private ? 'private' : 'public'})`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        spShowModalStatus(`❌ Connection failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Pull from GitHub → load into local session
+async function spPull(silent = false) {
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        if (!silent) spShowModalStatus('⚠️ Please configure GitHub settings first.', '#fff3cd', '#856404');
+        return;
+    }
+    if (!silent) spShowModalStatus('⬇️ Pulling from GitHub...', '#f6f8fa', '#24292f');
     try {
         const text = await ghReadFile('shiftplanner_data.json');
         if (text === null) {
-            if (!silent) spShowModalStatus('ℹ️ No data file yet — push your data first to create it.', '#fff3cd', '#856404');
+            if (!silent) spShowModalStatus('ℹ️ No shared file found yet. Push your data first to create it.', '#fff3cd', '#856404');
             return;
         }
         const parsed = JSON.parse(text);
-        if (!silent && !confirm('⬇️ Pull from GitHub?\n\nThis will replace your local data with the shared version. Continue?')) return;
+
+        if (!silent && !confirm('⬇️ Pull from GitHub?\n\nThis will REPLACE your current local data with the shared version.\n\nAny unsaved local changes will be lost. Continue?')) return;
+
         allMonthsData = parsed;
         localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+
         const now = new Date().toLocaleString();
         localStorage.setItem('shiftPlannerSPLastSync', now);
         changeMonth(true);
-        if (!silent) spShowModalStatus(`✅ Pulled at ${now}`, '#e6ffe6', '#107c10');
+
+        const msg = `✅ Pulled at ${now}`;
+        if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
         spSetStatus(`🐙 Pulled · ${now}`, '#e6ffe6', '#107c10');
     } catch(e) {
-        if (!silent) spShowModalStatus(`❌ Pull failed: ${e.message}`, '#ffe6e6', '#c0392b');
-        spSetStatus(`⚠️ Pull failed`, '#fff3cd', '#856404');
+        const msg = `❌ Pull failed: ${e.message}`;
+        if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
+        spSetStatus(`⚠️ GitHub pull failed`, '#fff3cd', '#856404');
     }
 }
 
-// ── Push shift data ──
+// Push local data → GitHub
 async function spPush(silent = false) {
-    if (!ghIsReady()) {
-        if (!silent) spShowModalStatus('⚠️ Please connect to GitHub first.', '#fff3cd', '#856404');
+    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
+        if (!silent) spShowModalStatus('⚠️ Please configure GitHub settings first.', '#fff3cd', '#856404');
         return;
     }
-    if (!silent) spShowModalStatus('⬆️ Pushing...', '#f6f8fa', '#24292f');
+    if (!silent) spShowModalStatus('⬆️ Pushing to GitHub...', '#f6f8fa', '#24292f');
     try {
-        saveData();
-        await ghWriteFile('shiftplanner_data.json', JSON.stringify(allMonthsData, null, 2));
+        saveData(); // ensure latest state is in allMonthsData
+        const payload = JSON.stringify(allMonthsData, null, 2);
+        await ghWriteFile('shiftplanner_data.json', payload, `Shift Planner update · ${new Date().toISOString()}`);
+
         const now = new Date().toLocaleString();
         localStorage.setItem('shiftPlannerSPLastSync', now);
-        if (!silent) spShowModalStatus(`✅ Pushed at ${now}`, '#e6ffe6', '#107c10');
+
+        const msg = `✅ Pushed at ${now}`;
+        if (!silent) spShowModalStatus(msg, '#e6ffe6', '#107c10');
         spSetStatus(`🐙 Pushed · ${now}`, '#e6ffe6', '#107c10');
     } catch(e) {
-        if (!silent) spShowModalStatus(`❌ Push failed: ${e.message}`, '#ffe6e6', '#c0392b');
-        if (!silent) spSetStatus(`⚠️ Push failed`, '#fff3cd', '#856404');
+        const msg = `❌ Push failed: ${e.message}`;
+        if (!silent) spShowModalStatus(msg, '#ffe6e6', '#c0392b');
+        if (!silent) spSetStatus(`⚠️ GitHub push failed`, '#fff3cd', '#856404');
     }
 }
-
-// ── Password: save/load via GitHub ──
-async function saveNewPassword() {
-    const p1 = document.getElementById('pw1').value;
-    const p2 = document.getElementById('pw2').value;
-    const err = document.getElementById('setPwError');
-    if (!p1) { err.textContent='⚠️ Password cannot be empty.'; err.style.display='block'; return; }
-    if (p1 !== p2) { err.textContent='⚠️ Passwords do not match.'; err.style.display='block'; return; }
-    if (p1.length < 4) { err.textContent='⚠️ At least 4 characters.'; err.style.display='block'; return; }
-    if (!ghIsReady()) { err.textContent='⚠️ Connect to GitHub first (🐙 button).'; err.style.display='block'; return; }
-    err.style.display = 'none';
-    const hash = await sha256(p1);
-    try {
-        await ghWriteFile(spCfgFile, JSON.stringify({ pwHash: hash, version: 1 }, null, 2), 'Set editor password');
-        pwHash = hash;
-        isEditMode = true; applyLockState();
-        document.getElementById('setPasswordModal').style.display = 'none';
-        alert('✅ Password saved to GitHub!\n\nYou are now in Edit Mode. Share this password with colleagues who need to edit shifts.');
-    } catch(e) { err.textContent=`❌ ${e.message}`; err.style.display='block'; }
-}
-
-async function spLoadConfig() {
-    if (!ghIsReady()) return;
-    try {
-        const text = await ghReadFile(spCfgFile);
-        if (text) { const cfg = JSON.parse(text); if (cfg.pwHash) pwHash = cfg.pwHash; }
-    } catch(e) {}
-}
-
-// ─────────────────────────────────────────────────────────
-//  Comment Sync — same repo, same token
-// ─────────────────────────────────────────────────────────
-function cmtReady() { return ghIsReady(); }
-function cmtToken() { return ghConfig.token; }
-
-function cmtShowStatus(msg, bg, color) {
-    const el = document.getElementById('cmtStatus');
-    if (!el) return;
-    el.textContent = msg; el.style.background = bg; el.style.color = color; el.style.display = 'block';
-    clearTimeout(el._t);
-    el._t = setTimeout(() => { if(el.textContent===msg) el.style.display='none'; }, 4000);
-}
-
-async function cmtPull(silent = false) {
-    if (!cmtReady()) { if (!silent) cmtShowStatus('⚠️ Connect to GitHub first.', '#fff3cd', '#856404'); return; }
-    try {
-        const text = await ghReadFile('shiftplanner_comments.json');
-        if (!text) return;
-        const remote = JSON.parse(text);
-        if (remote[currentMonthKey] && Array.isArray(remote[currentMonthKey])) {
-            dailyComments = remote[currentMonthKey];
-            dailyComments.forEach((txt, d) => {
-                const inp = document.querySelector(`.comment-input[data-day="${d}"]`);
-                if (inp && document.activeElement !== inp) inp.value = txt || '';
-            });
-            if (allMonthsData[currentMonthKey]) {
-                allMonthsData[currentMonthKey].dailyComments = dailyComments;
-                localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
-            }
-        }
-        if (!silent) cmtShowStatus(`✅ Comments pulled (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
-    } catch(e) { if (!silent) cmtShowStatus(`❌ ${e.message}`, '#ffe6e6', '#c0392b'); }
-}
-
-async function cmtPush(silent = false) {
-    if (!cmtReady()) { if (!silent) cmtShowStatus('⚠️ Connect to GitHub first.', '#fff3cd', '#856404'); return; }
-    try {
-        let existing = {};
-        try { const t = await ghReadFile('shiftplanner_comments.json'); if (t) existing = JSON.parse(t); } catch(e) {}
-        existing[currentMonthKey] = dailyComments;
-        await ghWriteFile('shiftplanner_comments.json', JSON.stringify(existing, null, 2), `Comments · ${currentMonthKey}`);
-        if (!silent) cmtShowStatus(`✅ Comments saved (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
-    } catch(e) { if (!silent) cmtShowStatus(`❌ ${e.message}`, '#ffe6e6', '#c0392b'); }
-}
-
-async function cmtTest() { await spTestConnection(); }
-
-function scheduleCommentSync() {
-    if (!cmtReady()) return;
-    clearTimeout(commentSyncDebounceTimer);
-    commentSyncDebounceTimer = setTimeout(() => cmtPush(true), 2000);
-}
-
-// legacy stubs — no longer used but kept so nothing breaks
-function saveCommentSyncConfig() {}
-function saveSharedCommentToken() { cmtShowStatus('Token is now the same as your GitHub PAT — no separate setup needed!', '#e6f3ff', '#0969da'); }
 
 // ─────────────────────────────────────────────────────────
 //  Comment Sync — GitHub only, shared embedded token
@@ -3638,7 +3541,288 @@ function saveSharedCommentToken() { cmtShowStatus('Token is now the same as your
 //  Token is baked into the HTML by the admin — users need zero setup.
 // ─────────────────────────────────────────────────────────
 
+// Admin saves the shared token — updates COMMENTS_SHARED_TOKEN in memory
+// and patches the HTML file in-repo so the token is baked in for all users.
+async function saveSharedCommentToken() {
+    const token = document.getElementById('cmtSharedToken').value.trim();
+    if (!token) { cmtShowStatus('⚠️ Please paste a PAT first.', '#fff3cd', '#856404'); return; }
+    if (!spConfig.siteUrl || !spConfig.folderPath) {
+        cmtShowStatus('⚠️ Configure GitHub owner & repo in the settings above first.', '#fff3cd', '#856404');
+        return;
+    }
+    COMMENTS_SHARED_TOKEN = token;
+    cmtShowStatus('💾 Token saved in memory. Use ⬇️ Download as HTML to bake it into the file, then commit to your repo.', '#e6f3ff', '#0969da');
+}
+
+function cmtShowStatus(msg, bg, color) {
+    const el = document.getElementById('cmtStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = bg;
+    el.style.color = color;
+    el.style.display = 'block';
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => { if (el.textContent === msg) el.style.display = 'none'; }, 5000);
+}
+
+// The token to use for comments — shared token if set, else fall back to personal PAT
+function cmtToken() {
+    return COMMENTS_SHARED_TOKEN || spConfig.fileName || '';
+}
+
+function cmtReady() {
+    return !!(cmtToken() && spConfig.siteUrl && spConfig.folderPath);
+}
+
+// Pull comments for current month from GitHub
+async function cmtPull(silent = false) {
+    if (!cmtReady()) {
+        if (!silent) cmtShowStatus('⚠️ Configure GitHub settings and save a Shared Comments Token first.', '#fff3cd', '#856404');
+        return;
+    }
+    try {
+        const text = await ghReadFileWith('shiftplanner_comments.json', cmtToken());
+        if (text === null) return; // file doesn't exist yet — no comments to load
+
+        const remote = JSON.parse(text);
+
+        // Update live dailyComments for current month if present
+        if (remote[currentMonthKey] && Array.isArray(remote[currentMonthKey])) {
+            dailyComments = remote[currentMonthKey];
+            // Patch DOM inputs without full re-render (skip the focused one)
+            dailyComments.forEach((txt, d) => {
+                const inp = document.querySelector(`.comment-input[data-day="${d}"]`);
+                if (inp && document.activeElement !== inp) inp.value = txt || '';
+            });
+            // Also persist into allMonthsData
+            if (allMonthsData[currentMonthKey]) {
+                allMonthsData[currentMonthKey].dailyComments = dailyComments;
+                localStorage.setItem('shiftPlannerAllMonthsV23', JSON.stringify(allMonthsData));
+            }
+        }
+        if (!silent) cmtShowStatus(`✅ Comments pulled (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        if (!silent) cmtShowStatus(`❌ Pull failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Push current month's comments to GitHub (merges with other months)
+async function cmtPush(silent = false) {
+    if (!cmtReady()) {
+        if (!silent) cmtShowStatus('⚠️ Configure GitHub settings and save a Shared Comments Token first.', '#fff3cd', '#856404');
+        return;
+    }
+    try {
+        // Load existing comments file first so we don't erase other months
+        let existing = {};
+        try {
+            const text = await ghReadFileWith('shiftplanner_comments.json', cmtToken());
+            if (text) existing = JSON.parse(text);
+        } catch(e) { /* file may not exist yet */ }
+
+        existing[currentMonthKey] = dailyComments;
+
+        await ghWriteFileWith(
+            'shiftplanner_comments.json',
+            JSON.stringify(existing, null, 2),
+            cmtToken(),
+            `Comments update · ${currentMonthKey} · ${new Date().toISOString()}`
+        );
+        if (!silent) cmtShowStatus(`✅ Comments saved (${new Date().toLocaleTimeString()})`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        if (!silent) cmtShowStatus(`❌ Push failed: ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Test comment sync connection
+async function cmtTest() {
+    if (!cmtToken()) {
+        cmtShowStatus('⚠️ No token set. Paste a Shared Comments Token above.', '#fff3cd', '#856404');
+        return;
+    }
+    if (!spConfig.siteUrl || !spConfig.folderPath) {
+        cmtShowStatus('⚠️ Configure GitHub owner & repo first.', '#fff3cd', '#856404');
+        return;
+    }
+    cmtShowStatus('🔌 Testing...', '#f6f8fa', '#24292f');
+    try {
+        const r = await fetch(
+            `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}`,
+            { headers: { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${cmtToken()}`, 'X-GitHub-Api-Version':'2022-11-28' } }
+        );
+        if (r.status === 401) throw new Error('Invalid token');
+        if (r.status === 404) throw new Error('Repo not found');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        cmtShowStatus(`✅ Connected to ${d.full_name} — comments ready!`, '#e6ffe6', '#107c10');
+    } catch(e) {
+        cmtShowStatus(`❌ ${e.message}`, '#ffe6e6', '#c0392b');
+    }
+}
+
+// Debounced auto-push on every comment keystroke
+function scheduleCommentSync() {
+    if (!cmtReady()) return;
+    clearTimeout(commentSyncDebounceTimer);
+    commentSyncDebounceTimer = setTimeout(() => cmtPush(true), 2000);
+}
+
+// ── GitHub API helpers that accept an explicit token ──
+// (so comments can use the shared token, shift data uses personal PAT)
+
+async function ghReadFileWith(file, token) {
+    const url = `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+    const r = await fetch(url, {
+        headers: { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${token}`, 'X-GitHub-Api-Version':'2022-11-28' }
+    });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+}
+
+async function ghWriteFileWith(file, content, token, commitMsg) {
+    const url = `https://api.github.com/repos/${spConfig.siteUrl}/${spConfig.folderPath}/contents/${file}`;
+    const hdrs = { 'Accept':'application/vnd.github+json', 'Authorization':`Bearer ${token}`, 'X-GitHub-Api-Version':'2022-11-28', 'Content-Type':'application/json' };
+    // Get current SHA
+    let sha;
+    try { const r = await fetch(url, { headers: hdrs }); if (r.ok) { const d = await r.json(); sha = d.sha; } } catch(e) {}
+    const body = { message: commitMsg || `Update · ${new Date().toISOString()}`, content: btoa(unescape(encodeURIComponent(content))) };
+    if (sha) body.sha = sha;
+    const r = await fetch(url, { method:'PUT', headers: hdrs, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error(`GitHub write ${r.status}: ${await r.text()}`);
+    return await r.json();
+}
 
 // ─────────────────────────────────────────────────────────
 //  End of script
 // ─────────────────────────────────────────────────────────
+</script>
+
+<!-- ═══ FIRST-RUN SETUP POPUP ═══ -->
+<div id="setupPopup" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:460px; width:92%; box-shadow:0 8px 32px rgba(0,0,0,0.35);">
+        <div style="text-align:center; margin-bottom:18px;">
+            <div style="font-size:38px;">🐙</div>
+            <h2 style="margin:6px 0 0 0; color:#24292f; font-size:19px;">Connect to GitHub</h2>
+            <p style="color:#666; font-size:12px; margin:6px 0 0 0;">Enter your details once — saved in this browser only.</p>
+        </div>
+        <div style="display:grid; gap:12px;">
+            <div>
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px;">GitHub Username / Org</label>
+                <input id="su_owner" type="text" placeholder="e.g. myusername"
+                    style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px;">Repository Name</label>
+                <input id="su_repo" type="text" placeholder="e.g. shift-planner"
+                    style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;">
+            </div>
+            <div>
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px;">Personal Access Token (PAT)</label>
+                <input id="su_token" type="password" placeholder="github_pat_... or ghp_..."
+                    style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;"
+                    onkeydown="if(event.key==='Enter') suConnect()">
+                <small style="color:#888; font-size:11px;">GitHub Settings → Developer settings → Personal access tokens → Fine-grained → Contents: Read & Write</small>
+            </div>
+        </div>
+        <div id="su_error"  style="display:none; background:#fff0f0; border:1px solid #f5c6cb; border-radius:4px; padding:7px 10px; font-size:12px; color:#c0392b; margin-top:10px;"></div>
+        <div id="su_status" style="display:none; background:#eaffea; border:1px solid #a9dfbf; border-radius:4px; padding:7px 10px; font-size:12px; color:#1a7f37; margin-top:10px;"></div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button onclick="suConnect()" id="su_btn" style="flex:1; background:#0969da; color:white; border:none; padding:11px; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">🔌 Connect & Test</button>
+            <button onclick="suDismiss()" style="background:#eee; color:#555; border:none; padding:11px 16px; border-radius:6px; font-size:13px; cursor:pointer;">Skip</button>
+        </div>
+        <p style="font-size:11px; color:#aaa; text-align:center; margin:10px 0 0 0;">Token stored only in this browser — never committed to GitHub.</p>
+    </div>
+</div>
+<script>
+(function() {
+    // Show setup popup on first visit (no GitHub config saved yet)
+    function suShow() {
+        var el = document.getElementById('setupPopup');
+        if (!el) return;
+        // Pre-fill if already configured
+        var saved = localStorage.getItem('shiftPlannerSPConfig');
+        if (saved) {
+            try {
+                var c = JSON.parse(saved);
+                var o = document.getElementById('su_owner');
+                var r = document.getElementById('su_repo');
+                if (o && c.siteUrl)    o.value = c.siteUrl;
+                if (r && c.folderPath) r.value = c.folderPath;
+            } catch(e) {}
+        }
+        el.style.display = 'flex';
+        setTimeout(function() {
+            var first = document.getElementById('su_owner');
+            if (first && !first.value) first.focus();
+            else { var t = document.getElementById('su_token'); if(t) t.focus(); }
+        }, 100);
+    }
+
+    window.suDismiss = function() {
+        var el = document.getElementById('setupPopup');
+        if (el) el.style.display = 'none';
+    };
+
+    window.suConnect = async function() {
+        var owner = (document.getElementById('su_owner').value || '').trim();
+        var repo  = (document.getElementById('su_repo').value  || '').trim();
+        var token = (document.getElementById('su_token').value || '').trim();
+        var err   = document.getElementById('su_error');
+        var stat  = document.getElementById('su_status');
+        var btn   = document.getElementById('su_btn');
+        err.style.display = 'none';
+        stat.style.display = 'none';
+        if (!owner || !repo || !token) {
+            err.textContent = 'Please fill in all three fields.';
+            err.style.display = 'block'; return;
+        }
+        btn.textContent = 'Testing...'; btn.disabled = true;
+        try {
+            var r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
+                headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28' }
+            });
+            if (r.status === 401) throw new Error('Invalid token — check your PAT.');
+            if (r.status === 404) throw new Error('Repo not found — check owner and repo name.');
+            if (!r.ok) throw new Error('GitHub error ' + r.status);
+            var data = await r.json();
+            // Save using the same keys the main app uses
+            var cfg = { siteUrl: owner, folderPath: repo, fileName: token, autoSync: false };
+            localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(cfg));
+            stat.textContent = 'Connected to ' + data.full_name + '! Loading config...';
+            stat.style.display = 'block';
+            btn.textContent = 'Connected!';
+            // Tell the main app about the new config
+            if (typeof spConfig !== 'undefined') {
+                spConfig.siteUrl    = owner;
+                spConfig.folderPath = repo;
+                spConfig.fileName   = token;
+            }
+            if (typeof spLoadConfig === 'function') spLoadConfig();
+            if (typeof spSetStatus  === 'function') spSetStatus('🐙 ' + owner + '/' + repo + ' · Connected', '#f6f8fa', '#24292f');
+            setTimeout(function() {
+                suDismiss();
+                if (typeof spPull === 'function') spPull(true);
+            }, 1200);
+        } catch(e) {
+            err.textContent = e.message;
+            err.style.display = 'block';
+            btn.textContent = '🔌 Connect & Test'; btn.disabled = false;
+        }
+    };
+
+    // Open from button click
+    window.openSetupPopup = suShow;
+
+    // Auto-show on first visit
+    setTimeout(function() {
+        var saved = localStorage.getItem('shiftPlannerSPConfig');
+        var hasCfg = false;
+        if (saved) { try { var c = JSON.parse(saved); hasCfg = !!(c.siteUrl && c.folderPath && c.fileName); } catch(e){} }
+        if (!hasCfg) suShow();
+    }, 700);
+})();
+</script>
+</body>
+</html>
