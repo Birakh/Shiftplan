@@ -58,12 +58,22 @@
         .tgt-input { width: 30px; font-size: 11px; padding: 2px; text-align: center; border: 1px solid #aaa; border-radius: 3px; background: #fffbcc; font-weight: bold; }
         .tgt-panel-input { width: 35px; text-align: center; font-weight: bold; margin-right: 5px; }
 
-        /* ── Lock / Edit Mode ── */
-        .app-locked .edit-only { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
+        /* ── Role-based Lock ── */
+        /* Viewer mode (default) — nothing editable */
+        .app-locked .edit-only    { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
         .app-locked .shift-select { pointer-events:none; background:#f0f0f0 !important; color:#888 !important; }
-        .app-locked .tgt-input   { pointer-events:none; background:#f0f0f0 !important; }
-        .app-locked .comment-input { } /* comments always free */
+        .app-locked .tgt-input    { pointer-events:none; background:#f0f0f0 !important; }
+        .app-locked .comment-input { } /* comments always free for all roles */
         .app-locked input[type="checkbox"].edit-chk { pointer-events:none; opacity:0.35; }
+        /* Editor mode — shifts editable, admin-only items locked */
+        .app-editor .admin-only   { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
+        .app-editor .edit-only    { opacity:1; pointer-events:auto; filter:none; }
+        .app-editor .shift-select { background:inherit !important; color:inherit !important; pointer-events:auto; }
+        .app-editor .tgt-input    { pointer-events:none; background:#f0f0f0 !important; }
+        /* Role badge colours */
+        #roleBadge.viewer { background:#ffecec; color:#c0392b; }
+        #roleBadge.editor { background:#e8f4fc; color:#0969da; }
+        #roleBadge.admin  { background:#eaffea; color:#1a7f37; }
         #lockBtn { position:fixed; top:10px; right:14px; z-index:500; padding:5px 12px;
             font-size:13px; font-weight:bold; border:none; border-radius:20px; cursor:pointer;
             box-shadow:0 2px 6px rgba(0,0,0,0.25); transition:background 0.2s; }
@@ -117,9 +127,9 @@
 
 <h1 id="pageTitle" class="no-print" style="display:inline-block; margin-right:16px;">Shift Planner (Forever Memory Enabled ⏳💾)</h1>
 <button id="langToggleBtn" onclick="toggleLang()" style="padding:4px 12px; font-size:12px; font-weight:bold; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; vertical-align:middle; margin-bottom:6px;">🌐 Deutsch</button>
-<div id="lockBadge" style="display:inline-block; margin-left:10px; font-size:11px; vertical-align:middle; padding:3px 10px; border-radius:12px; background:#ffecec; color:#c0392b; font-weight:bold;">🔒 View Mode</div>
+<div id="roleBadge" class="viewer" style="display:inline-block; margin-left:10px; font-size:11px; vertical-align:middle; padding:3px 10px; border-radius:12px; font-weight:bold;">👁 Viewer</div>
 <!-- Fixed lock/unlock button top-right -->
-<button id="lockBtn" class="locked" onclick="toggleLock()">🔒 Locked</button>
+<button id="lockBtn" class="locked" onclick="toggleLock()">🔒 Login</button>
 
 <div class="container no-print">
 
@@ -143,7 +153,7 @@
             <input type="hidden" id="monthPicker">
         </div>
 
-        <div class="form-group edit-only" style="background:#f9f9f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
+        <div class="form-group edit-only admin-only" style="background:#f9f9f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;">
             <strong id="targetsTitle">Master Granular Targets</strong><br>
             <small id="wdLabel">Weekday Defaults:</small><br>
             8E: <input type="number" id="mstWd8E" class="tgt-panel-input" value="4" onchange="saveMasterTargets()">
@@ -165,7 +175,7 @@
             </div>
         </div>
 
-        <div class="edit-only" style="margin:6px 0 4px 0; padding:7px 9px; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:11px;">
+        <div class="edit-only admin-only" style="margin:6px 0 4px 0; padding:7px 9px; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:11px;">
             <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-weight:bold; color:#555;">
                 <input type="checkbox" id="toggle13H" onchange="toggle13HShift()">
                 <span id="toggle13Hlabel">Enable <span style="background:#ffe599; padding:1px 5px; border-radius:3px;">13H</span> shifts (07:00–20:00)</span>
@@ -206,7 +216,7 @@
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
             <button class="btn-select btn-half-l edit-only" id="selectModeBtn" onclick="toggleSelectMode()">⬜ Select Mode</button>
-            <button id="btnClear" class="btn-clear btn-half-r edit-only" onclick="clearBoard()">🗑️ Clear Month</button>
+            <button id="btnClear" class="btn-clear btn-half-r edit-only admin-only" onclick="clearBoard()">🗑️ Clear Month</button>
         </div>
     </div>
 
@@ -325,8 +335,8 @@
                 <label><input type="checkbox" value="0"><span class="dow_su">Su</span></label>
             </div>
         </div>
-        <button id="btnAddWorker" class="edit-only" onclick="addWorkerFromForm()">+ Add Worker</button>
-        <button id="btnClearAll" class="edit-only" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
+        <button id="btnAddWorker" class="edit-only admin-only" onclick="addWorkerFromForm()">+ Add Worker</button>
+        <button id="btnClearAll" class="edit-only admin-only" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
     </div>
 
     <!-- ═══ PANEL 3: Legend ═══ -->
@@ -675,49 +685,83 @@
     </div>
 </div>
 
-<!-- Unlock Modal -->
+<!-- Role Login Modal -->
 <div id="unlockModal" class="modal">
-    <div class="modal-content" style="max-width:360px;">
+    <div class="modal-content" style="max-width:380px;">
         <span class="close-btn" onclick="document.getElementById('unlockModal').style.display='none'">&times;</span>
-        <h2 style="color:#c0392b;">🔒 Enter Password to Edit</h2>
-        <p style="font-size:13px; color:#555; margin-bottom:12px;">Enter the editor password to unlock shift editing, Auto-Fill, and settings.</p>
+        <h2 style="color:#24292f; font-size:18px;">🔐 Login</h2>
+
+        <!-- Role tabs -->
+        <div style="display:flex; gap:6px; margin-bottom:16px;">
+            <button id="tabEditor" onclick="switchLoginTab('editor')"
+                style="flex:1; padding:8px; border-radius:6px; border:2px solid #0969da; background:#0969da; color:white; font-weight:bold; cursor:pointer; font-size:13px;">
+                ✏️ Editor
+            </button>
+            <button id="tabAdmin" onclick="switchLoginTab('admin')"
+                style="flex:1; padding:8px; border-radius:6px; border:2px solid #ddd; background:white; color:#555; font-weight:bold; cursor:pointer; font-size:13px;">
+                ⚙️ Admin
+            </button>
+        </div>
+
+        <div id="loginTabDesc" style="font-size:12px; color:#666; margin-bottom:10px; padding:6px 10px; background:#f6f8fa; border-radius:4px;">
+            ✏️ <strong>Editor:</strong> Edit and update shifts. Cannot change workers, targets, or settings.
+        </div>
+
         <input type="password" id="unlockInput" placeholder="Password" autocomplete="off"
             style="width:100%; box-sizing:border-box; padding:9px; font-size:15px; border:2px solid #ddd; border-radius:6px; margin-bottom:8px;"
             onkeydown="if(event.key==='Enter') attemptUnlock()">
         <div id="unlockError" style="display:none; color:#c0392b; font-size:12px; margin-bottom:8px;">❌ Incorrect password. Try again.</div>
         <div style="display:flex; gap:8px;">
-            <button onclick="attemptUnlock()" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:5px; font-size:14px; font-weight:bold; cursor:pointer;">🔓 Unlock</button>
+            <button onclick="attemptUnlock()" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:5px; font-size:14px; font-weight:bold; cursor:pointer;">🔓 Login</button>
             <button onclick="document.getElementById('unlockModal').style.display='none'" style="background:#95a5a6; color:white; border:none; padding:10px 16px; border-radius:5px; cursor:pointer;">Cancel</button>
         </div>
-        <p style="font-size:11px; color:#aaa; margin-top:10px; text-align:center;">No password set yet? <a href="#" onclick="openSetPasswordModal();return false;" style="color:#0078d4;">Set one now</a></p>
+        <p style="font-size:11px; color:#aaa; margin-top:10px; text-align:center;">No password set? <a href="#" onclick="openSetPasswordModal();return false;" style="color:#0078d4;">Set one now</a></p>
     </div>
 </div>
 
 <!-- Set / Change Password Modal -->
 <div id="setPasswordModal" class="modal">
-    <div class="modal-content" style="max-width:400px;">
+    <div class="modal-content" style="max-width:440px;">
         <span class="close-btn" onclick="document.getElementById('setPasswordModal').style.display='none'">&times;</span>
-        <h2 style="color:#0078d4;" id="setPwTitle">🔑 Set Editor Password</h2>
-        <p id="setPwDesc" style="font-size:12px; color:#555; margin-bottom:12px;">This password protects shift editing. Colleagues without it can still view the schedule and leave comments.</p>
-        <div style="display:grid; gap:8px; margin-bottom:12px;">
-            <div>
-                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">New Password</label>
-                <input type="password" id="pw1" placeholder="Choose a password" autocomplete="new-password"
-                    style="width:100%; box-sizing:border-box; padding:8px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
-            </div>
-            <div>
-                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Confirm Password</label>
-                <input type="password" id="pw2" placeholder="Repeat password" autocomplete="new-password"
-                    style="width:100%; box-sizing:border-box; padding:8px; font-size:13px; border:1px solid #ccc; border-radius:4px;"
-                    onkeydown="if(event.key==='Enter') saveNewPassword()">
+        <h2 style="color:#0078d4;" id="setPwTitle">🔑 Set Passwords</h2>
+        <p style="font-size:12px; color:#555; margin-bottom:14px;">Set separate passwords for each role. Leave a field blank to keep the existing password. Passwords are saved to your GitHub repo and sync to all devices automatically.</p>
+
+        <!-- Admin password -->
+        <div style="background:#eaffea; border:1px solid #a9dfbf; border-radius:6px; padding:10px; margin-bottom:10px;">
+            <strong style="font-size:13px; color:#1a7f37;">⚙️ Admin Password</strong>
+            <p style="font-size:11px; color:#555; margin:3px 0 8px 0;">Full access — edit shifts, workers, targets, settings, and passwords.</p>
+            <div style="display:grid; gap:6px;">
+                <input type="password" id="pw_admin1" placeholder="New admin password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:7px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                <input type="password" id="pw_admin2" placeholder="Confirm admin password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:7px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
             </div>
         </div>
+
+        <!-- Editor password -->
+        <div style="background:#e8f4fc; border:1px solid #a8d4f0; border-radius:6px; padding:10px; margin-bottom:10px;">
+            <strong style="font-size:13px; color:#0969da;">✏️ Editor Password</strong>
+            <p style="font-size:11px; color:#555; margin:3px 0 8px 0;">Can edit and update shifts. Cannot change workers, targets, or settings.</p>
+            <div style="display:grid; gap:6px;">
+                <input type="password" id="pw_editor1" placeholder="New editor password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:7px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                <input type="password" id="pw_editor2" placeholder="Confirm editor password" autocomplete="new-password"
+                    style="width:100%; box-sizing:border-box; padding:7px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+        </div>
+
+        <!-- Viewer note -->
+        <div style="background:#f6f8fa; border:1px solid #ddd; border-radius:6px; padding:10px; margin-bottom:14px;">
+            <strong style="font-size:13px; color:#555;">👁 Viewer (everyone else)</strong>
+            <p style="font-size:11px; color:#555; margin:3px 0 0 0;">No password needed. Anyone who opens the page is a Viewer and can write comments freely.</p>
+        </div>
+
         <div id="setPwError" style="display:none; color:#c0392b; font-size:12px; margin-bottom:8px;"></div>
         <div style="display:flex; gap:8px;">
-            <button onclick="saveNewPassword()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:5px; font-size:13px; font-weight:bold; cursor:pointer;">💾 Save Password to GitHub</button>
+            <button onclick="saveAllPasswords()" style="flex:1; background:#0078d4; color:white; border:none; padding:10px; border-radius:5px; font-size:13px; font-weight:bold; cursor:pointer;">💾 Save Passwords to GitHub</button>
             <button onclick="document.getElementById('setPasswordModal').style.display='none'" style="background:#95a5a6; color:white; border:none; padding:10px 14px; border-radius:5px; cursor:pointer;">Cancel</button>
         </div>
-        <p style="font-size:11px; color:#aaa; margin-top:10px;">The password hash is saved to <code>shiftplanner_config.json</code> in your GitHub repo. You must have GitHub sync configured first.</p>
+        <p style="font-size:11px; color:#aaa; margin-top:10px;">Passwords are saved as hashes to <code>shiftplanner_config.json</code> in your GitHub repo.</p>
     </div>
 </div>
 
@@ -796,10 +840,16 @@ let spConfig = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
 let COMMENTS_SHARED_TOKEN = ''; // ← Admin pastes their PAT here once, then re-uploads HTML to repo
 let commentSyncDebounceTimer = null;
 
-// ── Edit-mode lock ──
-let isEditMode = false;   // false = view/comment only, true = full edit
-let pwHash     = null;    // SHA-256 hex of the password, loaded from GitHub config
-let spCfgFile  = 'shiftplanner_config.json'; // config file name in GitHub repo
+// ── Role system ──
+// role: 'viewer' | 'editor' | 'admin'
+// isEditMode = true when role is editor OR admin
+let currentRole = 'viewer';
+let isEditMode  = false;
+let pwHash      = null;   // kept for compat — now = adminHash
+let adminHash   = null;
+let editorHash  = null;
+let spCfgFile   = 'shiftplanner_config.json';
+let loginTab    = 'editor'; // which tab is active in login modal
 
 // Select-mode state
 let selectMode    = false;
@@ -1190,7 +1240,7 @@ function loadTestWorkers() {
 }
 
 function toggle13HShift() {
-    if (!requireEdit("Toggle 13H")) { const chk=document.getElementById("toggle13H"); if(chk) chk.checked=use13H; return; }
+    if (!requireAdmin("Toggle 13H")) { const chk=document.getElementById("toggle13H"); if(chk) chk.checked=use13H; return; }
     use13H = document.getElementById('toggle13H').checked;
     ['wd13wrap','we13wrap'].forEach(id => {
         const el = document.getElementById(id);
@@ -1200,7 +1250,7 @@ function toggle13HShift() {
 }
 
 function toggle6HShift() {
-    if (!requireEdit("Toggle 6H")) { const chk=document.getElementById("toggle6H"); if(chk) chk.checked=use6H; return; }
+    if (!requireAdmin("Toggle 6H")) { const chk=document.getElementById("toggle6H"); if(chk) chk.checked=use6H; return; }
     use6H = document.getElementById('toggle6H').checked;
     ['wd6wrap','we6wrap'].forEach(id => {
         const el = document.getElementById(id);
@@ -1210,7 +1260,7 @@ function toggle6HShift() {
 }
 
 function saveMasterTargets() {
-    if (!requireEdit("Change Targets")) return;
+    if (!requireAdmin("Change Targets")) return;
     const map = { mstWd8E:'wd8E', mstWd8M:'wd8M', mstWd8L:'wd8L', mstWd13:'wd13', mstWd6:'wd6',
                   mstWe8E:'we8E', mstWe8M:'we8M', mstWe8L:'we8L', mstWe13:'we13', mstWe6:'we6',
                   mstWdImE:'wdImE', mstWdImL:'wdImL' };
@@ -1307,7 +1357,7 @@ function getPrevMonthLastDays(workerName, numDays) {
 }
 
 function updateDailyTarget(dIndex, type, value) {
-    if (!requireEdit("Change Daily Target")) return;
+    if (!requireAdmin("Change Daily Target")) return;
     dailyTargets[dIndex][type] = parseInt(value) || 0;
     saveData(); renderTable();
 }
@@ -1338,7 +1388,7 @@ function updateImmoRatioLabel() {
 }
 
 function addWorkerFromForm() {
-    if (!requireEdit("Add Worker")) return;
+    if (!requireAdmin("Add Worker")) return;
     const name = document.getElementById('workerName').value.toUpperCase();
     if (!name) return alert('Please enter a worker name.');
     const fixedOff = [];
@@ -1372,12 +1422,12 @@ function addWorkerFromForm() {
 }
 
 function deleteWorker(index) {
-    if (!requireEdit("Delete Worker")) return;
+    if (!requireAdmin("Delete Worker")) return;
     if (confirm(`Remove ${workers[index].name}?`)) { workers.splice(index,1); saveData(); renderTable(); }
 }
 
 function clearAllWorkers() {
-    if (!requireEdit("Clear All Workers")) return;
+    if (!requireAdmin("Clear All Workers")) return;
     if (workers.length === 0) return alert('No workers to remove.');
     if (!confirm(`Remove all ${workers.length} workers and clear all shifts for this month?\nThis cannot be undone.`)) return;
     workers = [];
@@ -1392,7 +1442,7 @@ function clearAllWorkers() {
 let editingWorkerIndex = null;
 
 function openEditModal(index) {
-    if (!requireEdit("Edit Worker")) return;
+    if (!requireAdmin("Edit Worker")) return;
     editingWorkerIndex = index;
     const w = workers[index];
 
@@ -2106,7 +2156,7 @@ function renderTable() {
 }
 
 function clearBoard() {
-    if (!requireEdit("Clear Month")) return;
+    if (!requireAdmin("Clear Month")) return;
     if (!confirm('Clear all shifts for this month?')) return;
     pushUndo();
     workers.forEach(w => w.shifts = Array(daysInMonth).fill('-'));
@@ -3235,52 +3285,95 @@ async function sha256(str) {
 }
 
 function applyLockState() {
-    const body   = document.body;
+    const body    = document.body;
     const lockBtn = document.getElementById('lockBtn');
-    const badge   = document.getElementById('lockBadge');
-    if (isEditMode) {
-        body.classList.remove('app-locked');
-        if (lockBtn) { lockBtn.textContent = '🔓 Editing'; lockBtn.className = 'unlocked'; }
-        if (badge)   { badge.textContent = '🔓 Edit Mode'; badge.style.background='#eaffea'; badge.style.color='#27ae60'; }
+    const badge   = document.getElementById('roleBadge');
+
+    // Remove all role classes first
+    body.classList.remove('app-locked', 'app-editor', 'app-admin');
+
+    if (currentRole === 'admin') {
+        body.classList.add('app-admin');
+        isEditMode = true;
+        if (lockBtn) { lockBtn.textContent = '⚙️ Admin'; lockBtn.className = 'unlocked'; }
+        if (badge)   { badge.textContent = '⚙️ Admin'; badge.className = 'admin'; }
+    } else if (currentRole === 'editor') {
+        body.classList.add('app-editor');
+        isEditMode = true;
+        if (lockBtn) { lockBtn.textContent = '✏️ Editor'; lockBtn.className = 'unlocked'; }
+        if (badge)   { badge.textContent = '✏️ Editor'; badge.className = 'editor'; }
     } else {
         body.classList.add('app-locked');
-        if (lockBtn) { lockBtn.textContent = '🔒 Locked'; lockBtn.className = 'locked'; }
-        if (badge)   { badge.textContent = '🔒 View Mode'; badge.style.background='#ffecec'; badge.style.color='#c0392b'; }
+        isEditMode = false;
+        if (lockBtn) { lockBtn.textContent = '🔒 Login'; lockBtn.className = 'locked'; }
+        if (badge)   { badge.textContent = '👁 Viewer'; badge.className = 'viewer'; }
+    }
+}
+
+function switchLoginTab(tab) {
+    loginTab = tab;
+    const edBtn = document.getElementById('tabEditor');
+    const adBtn = document.getElementById('tabAdmin');
+    const desc  = document.getElementById('loginTabDesc');
+    if (tab === 'editor') {
+        edBtn.style.background = '#0969da'; edBtn.style.color = 'white'; edBtn.style.borderColor = '#0969da';
+        adBtn.style.background = 'white';   adBtn.style.color = '#555';  adBtn.style.borderColor = '#ddd';
+        desc.innerHTML = '✏️ <strong>Editor:</strong> Edit and update shifts. Cannot change workers, targets, or settings.';
+    } else {
+        adBtn.style.background = '#1a7f37'; adBtn.style.color = 'white'; adBtn.style.borderColor = '#1a7f37';
+        edBtn.style.background = 'white';   edBtn.style.color = '#555';  edBtn.style.borderColor = '#ddd';
+        desc.innerHTML = '⚙️ <strong>Admin:</strong> Full access — edit shifts, workers, targets, and settings.';
     }
 }
 
 function toggleLock() {
-    if (isEditMode) {
-        // Lock
-        isEditMode = false;
+    if (currentRole !== 'viewer') {
+        // Log out → back to viewer
+        currentRole = 'viewer';
         applyLockState();
-    } else {
-        // Try to unlock
-        if (!pwHash) {
-            // No password set yet — go straight into edit mode with a status bar tip
-            isEditMode = true;
-            applyLockState();
-            spSetStatus('🔓 Edit Mode — no password set yet. Use 🐙 GitHub Sync → 🔑 Change Password to protect editing.', '#fffbe6', '#856404');
-        } else {
-            document.getElementById('unlockInput').value = '';
-            document.getElementById('unlockError').style.display = 'none';
-            document.getElementById('unlockModal').style.display = 'block';
-            setTimeout(() => document.getElementById('unlockInput').focus(), 100);
-        }
+        return;
     }
+    // No passwords set yet — go straight to admin with a tip
+    if (!adminHash && !editorHash) {
+        currentRole = 'admin';
+        applyLockState();
+        spSetStatus('⚙️ Admin Mode — no passwords set yet. Use 🐙 GitHub Sync → 🔑 Set Passwords to protect the app.', '#fffbe6', '#856404');
+        return;
+    }
+    // Show login modal
+    document.getElementById('unlockInput').value = '';
+    document.getElementById('unlockError').style.display = 'none';
+    switchLoginTab(editorHash ? 'editor' : 'admin');
+    document.getElementById('unlockModal').style.display = 'block';
+    setTimeout(() => document.getElementById('unlockInput').focus(), 100);
 }
 
 async function attemptUnlock() {
     const input = document.getElementById('unlockInput').value;
     const hash  = await sha256(input);
-    if (hash === pwHash) {
-        isEditMode = true;
+    const errEl = document.getElementById('unlockError');
+
+    if (loginTab === 'admin' && adminHash && hash === adminHash) {
+        currentRole = 'admin';
+        pwHash = adminHash; // compat
         applyLockState();
         document.getElementById('unlockModal').style.display = 'none';
         document.getElementById('unlockInput').value = '';
-        document.getElementById('unlockError').style.display = 'none';
+        errEl.style.display = 'none';
+    } else if (loginTab === 'editor' && editorHash && hash === editorHash) {
+        currentRole = 'editor';
+        applyLockState();
+        document.getElementById('unlockModal').style.display = 'none';
+        document.getElementById('unlockInput').value = '';
+        errEl.style.display = 'none';
+    } else if (loginTab === 'admin' && adminHash && hash === editorHash) {
+        // Typed editor password in admin tab - redirect
+        errEl.textContent = '❌ That is the Editor password. Switch to the Editor tab.';
+        errEl.style.display = 'block';
+        document.getElementById('unlockInput').value = '';
     } else {
-        document.getElementById('unlockError').style.display = 'block';
+        errEl.textContent = '❌ Incorrect password. Try again.';
+        errEl.style.display = 'block';
         document.getElementById('unlockInput').value = '';
         document.getElementById('unlockInput').focus();
     }
@@ -3288,59 +3381,87 @@ async function attemptUnlock() {
 
 function requireEdit(actionName) {
     if (isEditMode) return true;
-    alert(`🔒 "${actionName || 'This action'}" requires Edit Mode.\n\nClick the 🔒 Locked button (top-right) and enter the password.`);
+    alert(`🔒 "${actionName || 'This action'}" requires Editor or Admin login.\n\nClick the 🔒 Login button (top-right).`);
+    return false;
+}
+
+function requireAdmin(actionName) {
+    if (currentRole === 'admin') return true;
+    alert(`⚙️ "${actionName || 'This action'}" requires Admin login.\n\nClick 🔒 Login → select Admin tab.`);
     return false;
 }
 
 function openSetPasswordModal() {
-    document.getElementById('pw1').value = '';
-    document.getElementById('pw2').value = '';
+    // Clear all fields
+    ['pw_admin1','pw_admin2','pw_editor1','pw_editor2'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
     document.getElementById('setPwError').style.display = 'none';
-    const title = document.getElementById('setPwTitle');
-    const desc  = document.getElementById('setPwDesc');
-    if (title) title.textContent = pwHash ? '🔑 Change Editor Password' : '🔑 Set Editor Password';
     document.getElementById('unlockModal').style.display = 'none';
     document.getElementById('setPasswordModal').style.display = 'block';
-    setTimeout(() => document.getElementById('pw1').focus(), 100);
+    setTimeout(() => { const el = document.getElementById('pw_admin1'); if(el) el.focus(); }, 100);
 }
 
-async function saveNewPassword() {
-    const p1 = document.getElementById('pw1').value;
-    const p2 = document.getElementById('pw2').value;
-    const err = document.getElementById('setPwError');
-    if (!p1) { err.textContent = '⚠️ Password cannot be empty.'; err.style.display='block'; return; }
-    if (p1 !== p2) { err.textContent = '⚠️ Passwords do not match.'; err.style.display='block'; return; }
-    if (p1.length < 4) { err.textContent = '⚠️ Password must be at least 4 characters.'; err.style.display='block'; return; }
+async function saveAllPasswords() {
+    if (!requireAdmin('Set Passwords')) return;
     if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
-        err.textContent = '⚠️ GitHub is not configured. Set up GitHub sync first (🐙 button), then set the password.';
-        err.style.display = 'block';
-        return;
+        const err = document.getElementById('setPwError');
+        err.textContent = '⚠️ Connect to GitHub first (🐙 button).';
+        err.style.display = 'block'; return;
     }
+    const err = document.getElementById('setPwError');
     err.style.display = 'none';
-    const hash = await sha256(p1);
-    // Save to GitHub config file
+
+    const a1 = document.getElementById('pw_admin1').value;
+    const a2 = document.getElementById('pw_admin2').value;
+    const e1 = document.getElementById('pw_editor1').value;
+    const e2 = document.getElementById('pw_editor2').value;
+
+    // Validate
+    if (a1 && a1 !== a2) { err.textContent = '⚠️ Admin passwords do not match.'; err.style.display='block'; return; }
+    if (e1 && e1 !== e2) { err.textContent = '⚠️ Editor passwords do not match.'; err.style.display='block'; return; }
+    if (a1 && a1.length < 4) { err.textContent = '⚠️ Admin password must be at least 4 characters.'; err.style.display='block'; return; }
+    if (e1 && e1.length < 4) { err.textContent = '⚠️ Editor password must be at least 4 characters.'; err.style.display='block'; return; }
+    if (!a1 && !e1) { err.textContent = '⚠️ Enter at least one password to save.'; err.style.display='block'; return; }
+
     try {
-        await ghWriteFile(spCfgFile, JSON.stringify({ pwHash: hash, version: 1 }, null, 2));
-        pwHash = hash;
-        isEditMode = true;
-        applyLockState();
+        // Load existing config to preserve unchanged passwords
+        let cfg = { version: 2 };
+        try {
+            const existing = await ghReadFile(spCfgFile);
+            if (existing) cfg = JSON.parse(existing);
+        } catch(e) {}
+
+        if (a1) { cfg.adminHash  = await sha256(a1); adminHash  = cfg.adminHash; pwHash = cfg.adminHash; }
+        if (e1) { cfg.editorHash = await sha256(e1); editorHash = cfg.editorHash; }
+        cfg.version = 2;
+
+        await ghWriteFile(spCfgFile, JSON.stringify(cfg, null, 2));
         document.getElementById('setPasswordModal').style.display = 'none';
-        alert('✅ Password saved to GitHub!\n\nYou are now in Edit Mode. Share the password with your team — they will need it to make shift changes.');
+        const saved = [a1 ? 'Admin' : '', e1 ? 'Editor' : ''].filter(Boolean).join(' & ');
+        alert(`✅ ${saved} password${saved.includes('&') ? 's' : ''} saved to GitHub!\n\nAll team members will receive the update automatically on next load.`);
     } catch(e) {
         err.textContent = `❌ Failed to save: ${e.message}`;
         err.style.display = 'block';
     }
 }
 
-// Load password hash from GitHub config file
+// Keep saveNewPassword as alias for compat (called from old button references)
+async function saveNewPassword() { return saveAllPasswords(); }
+
+// Load all password hashes from GitHub config
 async function spLoadConfig() {
     if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) return;
     try {
         const content = await ghReadFile(spCfgFile);
         if (!content) return;
         const cfg = JSON.parse(content);
-        if (cfg.pwHash) pwHash = cfg.pwHash;
-    } catch(e) { /* silent — config file may not exist yet */ }
+        // v2 format: adminHash + editorHash
+        if (cfg.adminHash)  { adminHash  = cfg.adminHash;  pwHash = cfg.adminHash; }
+        if (cfg.editorHash) { editorHash = cfg.editorHash; }
+        // v1 format fallback: pwHash was the editor/admin password
+        if (!adminHash && cfg.pwHash) { adminHash = cfg.pwHash; pwHash = cfg.pwHash; }
+    } catch(e) { /* silent */ }
 }
 
 // ─────────────────────────────────────────────────────────
