@@ -59,17 +59,23 @@
         .tgt-panel-input { width: 35px; text-align: center; font-weight: bold; margin-right: 5px; }
 
         /* ── Role-based Lock ── */
-        /* Viewer mode (default) — nothing editable */
+        /* Viewer (default locked) — nothing editable */
         .app-locked .edit-only    { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
         .app-locked .shift-select { pointer-events:none; background:#f0f0f0 !important; color:#888 !important; }
         .app-locked .tgt-input    { pointer-events:none; background:#f0f0f0 !important; }
         .app-locked .comment-input { } /* comments always free for all roles */
         .app-locked input[type="checkbox"].edit-chk { pointer-events:none; opacity:0.35; }
-        /* Editor mode — shifts editable, admin-only items locked */
-        .app-editor .admin-only   { opacity:0.38; pointer-events:none; filter:grayscale(60%); }
-        .app-editor .edit-only    { opacity:1; pointer-events:auto; filter:none; }
-        .app-editor .shift-select { background:inherit !important; color:inherit !important; pointer-events:auto; }
+        /* Editor — shifts editable, admin-only items locked */
+        .app-editor .edit-only    { opacity:1 !important; pointer-events:auto !important; filter:none !important; }
+        .app-editor .shift-select { background:inherit !important; color:inherit !important; pointer-events:auto !important; }
         .app-editor .tgt-input    { pointer-events:none; background:#f0f0f0 !important; }
+        .app-editor .admin-only   { opacity:0.38 !important; pointer-events:none !important; filter:grayscale(60%) !important; }
+        /* Admin — everything unlocked */
+        .app-admin .edit-only     { opacity:1 !important; pointer-events:auto !important; filter:none !important; }
+        .app-admin .admin-only    { opacity:1 !important; pointer-events:auto !important; filter:none !important; }
+        .app-admin .shift-select  { background:inherit !important; color:inherit !important; pointer-events:auto !important; }
+        .app-admin .tgt-input     { pointer-events:auto !important; background:inherit !important; }
+        .app-admin input[type="checkbox"].edit-chk { pointer-events:auto !important; opacity:1 !important; }
         /* Role badge colours */
         #roleBadge.viewer { background:#ffecec; color:#c0392b; }
         #roleBadge.editor { background:#e8f4fc; color:#0969da; }
@@ -211,7 +217,7 @@
         </div>
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
         <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML</button>
-        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="(spConfig&&spConfig.siteUrl)?openSPModal():openSetupPopup()">🐙 GitHub Sync</button>
+        <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="openGHSyncOrSetup()">🐙 GitHub Sync</button>
         <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
@@ -3815,6 +3821,30 @@ async function ghWriteFileWith(file, content, token, commitMsg) {
     return await r.json();
 }
 
+// Smart GitHub sync button — opens setup if not configured, sync modal if already connected
+function openGHSyncOrSetup() {
+    const hasConfig = spConfig && spConfig.siteUrl && spConfig.folderPath && spConfig.fileName;
+    if (hasConfig) {
+        openSPModal();
+    } else {
+        // Try reading from localStorage in case suConnect just saved it
+        try {
+            const saved = localStorage.getItem('shiftPlannerSPConfig');
+            if (saved) {
+                const c = JSON.parse(saved);
+                if (c.siteUrl && c.folderPath && c.fileName) {
+                    spConfig.siteUrl    = c.siteUrl;
+                    spConfig.folderPath = c.folderPath;
+                    spConfig.fileName   = c.fileName;
+                    openSPModal();
+                    return;
+                }
+            }
+        } catch(e) {}
+        openSetupPopup();
+    }
+}
+
 // ─────────────────────────────────────────────────────────
 //  End of script
 // ─────────────────────────────────────────────────────────
@@ -3925,6 +3955,9 @@ async function ghWriteFileWith(file, content, token, commitMsg) {
             setTimeout(function() {
                 suDismiss();
                 if (typeof spPull === 'function') spPull(true);
+                // Update sync button label to show connected
+                var btn2 = document.getElementById('btnSPSync');
+                if (btn2) btn2.textContent = '🐙 GitHub: ' + repo;
             }, 1200);
         } catch(e) {
             err.textContent = e.message;
