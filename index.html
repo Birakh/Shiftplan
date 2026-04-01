@@ -127,17 +127,72 @@
         /* 13H and 6H wrapper spans — greyed out until enabled */
         #wd13wrap, #we13wrap { opacity: 0.35; }
         #wd6wrap,  #we6wrap  { opacity: 0.35; }
+        
+        /* ── Mobile View ── */
+        @media (max-width: 768px) {
+            .desktop-only { display: none !important; }
+            #mobileView { display: block !important; }
+            #pageTitle  { display: none !important; }
+            body { padding: 0; margin: 0; font-size: 14px; }
+            #lockBtn { display: none !important; }
+            #initErrorBar { font-size: 11px; }
+        }
+        @media (min-width: 769px) {
+            #mobileView { display: none !important; }
+        }
+        /* Mobile card styles */
+        #mobileView { padding: 12px; max-width: 480px; margin: 0 auto; }
+        .mob-header { background: #2c3e50; color: white; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+        .mob-header h2 { margin: 0 0 4px 0; font-size: 17px; }
+        .mob-header p  { margin: 0; font-size: 12px; opacity: 0.8; }
+        .mob-worker-sel { width: 100%; padding: 10px; font-size: 15px; border-radius: 8px; border: 2px solid #ddd; margin-bottom: 12px; box-sizing: border-box; }
+        .mob-day { background: white; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 4px solid #bbb; }
+        .mob-day.today { border-left-color: #e74c3c; }
+        .mob-day.has-shift { border-left-color: #27ae60; }
+        .mob-day.day-off  { border-left-color: #bbb; opacity: 0.6; }
+        .mob-day-date  { font-size: 11px; color: #888; margin-bottom: 2px; }
+        .mob-day-shift { font-size: 18px; font-weight: bold; color: #2c3e50; }
+        .mob-day-label { font-size: 12px; color: #555; margin-top: 2px; }
+        .mob-day-cmt   { margin-top: 6px; font-size: 12px; color: #7f8c8d; font-style: italic; }
+        .mob-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .mob-month-nav button { background: #2c3e50; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 14px; cursor: pointer; }
+        .mob-month-label { font-weight: bold; font-size: 15px; }
+        .mob-full-link { text-align: center; padding: 10px; color: #7f8c8d; font-size: 12px; margin-top: 8px; }
+        .mob-full-link a { color: #0969da; text-decoration: none; }
         </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
 
-<h1 id="pageTitle" class="no-print" style="display:inline-block; margin-right:16px;">Shift Planner (Forever Memory Enabled ⏳💾)</h1>
-<button id="langToggleBtn" onclick="toggleLang()" style="padding:4px 12px; font-size:12px; font-weight:bold; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; vertical-align:middle; margin-bottom:6px;">🌐 Deutsch</button>
-<div id="roleBadge" class="viewer" style="display:inline-block; margin-left:10px; font-size:11px; vertical-align:middle; padding:3px 10px; border-radius:12px; font-weight:bold;">👁 Viewer</div>
-<!-- Fixed lock/unlock button top-right -->
-<button id="lockBtn" class="locked" onclick="toggleLock()">🔒 Login</button>
+<!-- Init error bar — hidden unless onload crashes -->
+<div id="initErrorBar" style="display:none; background:#c0392b; color:white; padding:10px 16px; font-size:13px; font-weight:bold; position:fixed; top:0; left:0; right:0; z-index:9999; cursor:pointer;" onclick="this.style.display='none'">❌ Loading error — click to dismiss</div>
 
-<div class="container no-print">
+<h1 id="pageTitle" class="no-print" style="display:inline-block; margin-right:16px;">Shift Planner (Forever Memory Enabled ⏳💾)</h1>
+
+<!-- ═══ MOBILE VIEW ═══ -->
+<div id="mobileView">
+    <div class="mob-header">
+        <h2>📅 Shift Planner</h2>
+        <p id="mobMonthLabel">Loading...</p>
+    </div>
+    <div class="mob-month-nav">
+        <button onclick="mobPrevMonth()">◀</button>
+        <span class="mob-month-label" id="mobNavLabel">—</span>
+        <button onclick="mobNextMonth()">▶</button>
+    </div>
+    <select id="mobWorkerSel" class="mob-worker-sel" onchange="renderMobileView()">
+        <option value="">— Select your name —</option>
+    </select>
+    <div id="mobDayList"></div>
+    <div class="mob-full-link">📊 <a href="javascript:void(0)" onclick="document.getElementById('mobileView').style.display='none'; document.querySelectorAll('.desktop-only').forEach(e=>e.style.display='')">Switch to full desktop view</a></div>
+</div>
+
+<button id="langToggleBtn" class="desktop-only" onclick="toggleLang()" style="padding:4px 12px; font-size:12px; font-weight:bold; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; vertical-align:middle; margin-bottom:6px;">🌐 Deutsch</button>
+<div id="roleBadge" class="viewer desktop-only" style="display:inline-block; margin-left:10px; font-size:11px; vertical-align:middle; padding:3px 10px; border-radius:12px; font-weight:bold;">👁 Viewer</div>
+<!-- Fixed lock/unlock button top-right -->
+<button id="lockBtn" class="locked desktop-only" onclick="toggleLock()">🔒 Login</button>
+
+<div class="container no-print desktop-only">
 
     <!-- ═══ PANEL 1: Setup & Action ═══ -->
     <div class="panel" style="flex: 1.2;">
@@ -218,6 +273,7 @@
         <button id="btnExcel"  class="btn-export btn-full" onclick="copyColorfulExcel()">📋 Copy for Excel</button>
         <button id="btnHTML"   style="background:#1e8449; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#196f3d'" onmouseout="this.style.background='#1e8449'" onclick="downloadAsHTML()">⬇️ Download as HTML</button>
         <button id="btnSPSync" style="background:#24292f; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#1c2128'" onmouseout="this.style.background='#24292f'" onclick="openGHSyncOrSetup()">🐙 GitHub Sync</button>
+        <button onclick="clearAppCache()" style="background:#7f8c8d; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onmouseover="this.style.background='#6c7a7a'" onmouseout="this.style.background='#7f8c8d'">🗑️ Clear Cache</button>
         <div id="spStatusBar" style="display:none; margin-top:3px; padding:4px 7px; border-radius:3px; font-size:10px; font-weight:bold;"></div>
         <button id="btnDiff"   style="background:#2980b9; margin-top:6px; width:100%; font-size:11px; font-weight:bold; clear:both; display:block; padding:6px; border:none; border-radius:4px; color:white; cursor:pointer;" onclick="openMonthDiff()">📆 Month Comparison</button>
         <div style="clear:both; overflow:hidden; margin-top:10px;">
@@ -342,6 +398,34 @@
             </div>
         </div>
         <button id="btnAddWorker" class="edit-only admin-only" onclick="addWorkerFromForm()">+ Add Worker</button>
+        <!-- Summer schedule for new worker -->
+        <details style="margin-top:8px;">
+            <summary style="cursor:pointer; font-weight:bold; font-size:11px; color:#0056b3; padding:5px 8px; background:#e8f4fc; border-radius:4px; border:1px solid #aed6f1; list-style:none;">☀️ Summer Schedule</summary>
+            <div style="background:#f0f8ff; border:1px solid #aed6f1; border-radius:0 0 4px 4px; padding:8px; font-size:11px;">
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Mode</label>
+                <select id="workerSummerMode" onchange="toggleWorkerSummer()" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #aaa; margin-bottom:6px;">
+                    <option value="none">None</option>
+                    <option value="nurFruh">☀️ Nur Früh</option>
+                    <option value="nurSpat">🌙 Nur Spät</option>
+                    <option value="var1">🔄 Variante 1</option>
+                    <option value="var2">📅 Variante 2</option>
+                </select>
+                <div id="workerSummerWeekRow" style="display:none; margin-bottom:6px;">
+                    <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:2px;">Entry Week</label>
+                    <select id="workerSummerWeek" style="width:100%; padding:4px; font-size:11px; border-radius:4px; border:1px solid #aaa;">
+                        <option value="0">Week 1</option><option value="1">Week 2</option>
+                        <option value="2">Week 3</option><option value="3">Week 4</option>
+                    </select>
+                </div>
+                <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Active Months</label>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <label><input type="checkbox" id="wSumMay" value="5"> May</label>
+                    <label><input type="checkbox" id="wSumJun" value="6"> Jun</label>
+                    <label><input type="checkbox" id="wSumJul" value="7"> Jul</label>
+                    <label><input type="checkbox" id="wSumAug" value="8"> Aug</label>
+                </div>
+            </div>
+        </details>
         <button id="btnClearAll" class="edit-only admin-only" onclick="clearAllWorkers()" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:6px 12px; font-weight:bold; cursor:pointer; margin-left:8px;">🗑️ Clear All Workers</button>
     </div>
 
@@ -398,7 +482,7 @@
 </div>
 
 <!-- Stats toggle -->
-<div class="no-print" style="margin-bottom:8px; padding:0 4px;">
+<div class="no-print desktop-only" style="margin-bottom:8px; padding:0 4px;">
     <label style="cursor:pointer; font-size:13px; font-weight:bold; color:#34495e;">
         <input type="checkbox" id="statsToggle" onchange="toggleStatsPanel()">
         📊 Show Worker Stats Panel
@@ -528,6 +612,44 @@
                 ⚠️ Changing the contract or preference takes effect on the <strong>next Auto-Fill</strong> run. Existing shifts in the table are not automatically changed.
             </div>
 
+            <!-- ☀️ Summer Schedule -->
+            <details style="margin-bottom:10px;">
+                <summary style="cursor:pointer; font-weight:bold; font-size:12px; color:#0056b3; padding:6px 8px; background:#e8f4fc; border-radius:4px; border:1px solid #aed6f1; list-style:none;">
+                    ☀️ Summer Schedule (seasonal override)
+                </summary>
+                <div style="background:#f0f8ff; border:1px solid #aed6f1; border-radius:0 0 4px 4px; padding:10px; font-size:12px;">
+                    <div style="margin-bottom:8px;">
+                        <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Rotation Mode</label>
+                        <select id="editSummerMode" onchange="editToggleSummer()" style="width:100%; padding:5px; font-size:12px; border-radius:4px; border:1px solid #aaa;">
+                            <option value="none">None — normal auto-fill logic</option>
+                            <option value="nurFruh">☀️ Nur Früh — early shifts only</option>
+                            <option value="nurSpat">🌙 Nur Spät — late shifts only (8L + 8M mix)</option>
+                            <option value="var1">🔄 Variante 1 — alternating weeks, late weeks include Mittel</option>
+                            <option value="var2">📅 Variante 2 — free mix, phase-offset by entry week</option>
+                        </select>
+                    </div>
+                    <div id="editSummerWeekRow" style="display:none; margin-bottom:8px;">
+                        <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">Entry Week (Variante 2)</label>
+                        <select id="editSummerWeek" style="width:100%; padding:5px; font-size:12px; border-radius:4px; border:1px solid #aaa;">
+                            <option value="0">Week 1 (no offset)</option>
+                            <option value="1">Week 2 (offset by 1)</option>
+                            <option value="2">Week 3 (offset by 2)</option>
+                            <option value="3">Week 4 (offset by 3)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; font-weight:bold; display:block; margin-bottom:4px;">Active Months</label>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <label style="font-size:12px;"><input type="checkbox" id="editSumMay"  value="5"> May</label>
+                            <label style="font-size:12px;"><input type="checkbox" id="editSumJun"  value="6"> Jun</label>
+                            <label style="font-size:12px;"><input type="checkbox" id="editSumJul"  value="7"> Jul</label>
+                            <label style="font-size:12px;"><input type="checkbox" id="editSumAug"  value="8"> Aug</label>
+                        </div>
+                        <small style="color:#888; margin-top:4px; display:block;">Auto-Fill uses this mode only in the selected months.</small>
+                    </div>
+                </div>
+            </details>
+
             <div style="display:flex; gap:8px;">
                 <button onclick="saveEditWorker()" style="flex:1; background:#0056b3; color:white; padding:10px; font-size:14px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">💾 Save Changes</button>
                 <button onclick="closeEditModal()" style="background:#6c757d; color:white; padding:10px; font-size:13px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
@@ -656,13 +778,38 @@
             ⚠️ Last push wins — coordinate with your team or use auto-sync (which pulls before pushing).
         </div>
 
-        <!-- Comment Sync section — GitHub only, shared token embedded in HTML -->
-        <div style="margin-top:14px; background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:12px; font-size:12px;">
-            <strong style="font-size:13px;">💬 Comments Sync <span style="font-weight:normal; color:#27ae60; font-size:11px;">— GitHub only, no login needed for users</span></strong>
-            <p style="font-size:11px; color:#555; margin:6px 0 10px 0;">
-                Comments are stored in <code>shiftplanner_comments.json</code> in the same GitHub repo.<br>
-                Everyone can read &amp; write comments using a <strong>shared token embedded in the HTML</strong> — users need zero setup.
+        <!-- Data Encryption section -->
+        <div style="margin-top:12px; background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:12px; font-size:12px;">
+            <strong style="font-size:13px; color:#856404;">🔐 Data Encryption Password</strong>
+            <p style="font-size:11px; color:#555; margin:6px 0 8px 0;">
+                All JSON files are AES-encrypted with this shared team password. Every team member must enter the same password to read the schedule. Leave blank to disable encryption.
             </p>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input id="spDataPwd" type="password" placeholder="Enter team data password"
+                    style="flex:1; padding:7px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                <button onclick="setDataPassword()" style="background:#856404; color:white; border:none; padding:7px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">💾 Save</button>
+            </div>
+            <div id="spDataPwdStatus" style="display:none; margin-top:6px; font-size:11px; color:#1a7f37;"></div>
+            <small style="color:#888; display:block; margin-top:5px;">Saved in this browser only. Share the password verbally with your team — never via chat or email.</small>
+        </div>
+
+        <!-- Comment Sync section -->
+        <div style="margin-top:14px; background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:12px; font-size:12px;">
+            <strong style="font-size:13px;">💬 Comments Sync</strong>
+            <p style="font-size:11px; color:#555; margin:6px 0 8px 0;">
+                Comments are stored in <code>shiftplanner_comments.json</code> in the repo.<br>
+                Viewers write comments using a <strong>shared token</strong> — they need zero setup once the admin sets it below.
+            </p>
+            <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:4px; padding:8px; margin-bottom:8px;">
+                <strong style="font-size:11px;">⚙️ Admin: Set shared comment token (once)</strong><br>
+                <small style="color:#555;">Paste a PAT with Contents: Read &amp; Write. All viewers will use this token automatically to post comments.</small>
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <input id="cmtTokenInput" type="password" placeholder="ghp_... or github_pat_..."
+                        style="flex:1; padding:6px; font-size:12px; border:1px solid #aaa; border-radius:4px;">
+                    <button onclick="setCommentToken()" style="background:#27ae60; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">💾 Set</button>
+                </div>
+                <small style="color:#888; font-size:10px;">After setting: download HTML (⬇️ button) and commit to repo — then all users get it automatically.</small>
+            </div>
 
             <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:4px; padding:8px; margin-bottom:10px; font-size:11px;">
                 <strong>⚙️ One-time admin setup:</strong><br>
@@ -838,6 +985,55 @@ let currentLang = 'en'; // 'en' or 'de'
 // owner = GitHub username/org, repo = repository name, token = PAT (personal per user)
 let spConfig = { siteUrl:'', folderPath:'', fileName:'', autoSync:false };
 
+// ── Data Encryption ──
+// All JSON files stored on GitHub are AES-encrypted with this shared password.
+// Everyone who can access the app needs to know it. Completely separate from
+// the admin/editor login passwords.
+let dataPassword = ''; // set via setup popup or settings; stored in localStorage
+
+function encryptData(plainText) {
+    if (!dataPassword) return plainText; // no password = no encryption (fallback)
+    try {
+        return JSON.stringify({ encrypted: CryptoJS.AES.encrypt(plainText, dataPassword).toString() });
+    } catch(e) { console.warn('Encrypt failed:', e); return plainText; }
+}
+
+function decryptData(text) {
+    if (!text) return text;
+    try {
+        const obj = JSON.parse(text);
+        if (obj && obj.encrypted) {
+            if (!dataPassword) throw new Error('Data is encrypted — enter the data password first.');
+            const bytes = CryptoJS.AES.decrypt(obj.encrypted, dataPassword);
+            const dec = bytes.toString(CryptoJS.enc.Utf8);
+            if (!dec) throw new Error('Wrong data password — decryption produced empty result.');
+            return dec;
+        }
+    } catch(e) {
+        if (e.message.includes('encrypted') || e.message.includes('password')) throw e;
+        // Not JSON or not encrypted object — return as-is (plain text fallback)
+    }
+    return text; // unencrypted data (legacy / first run)
+}
+
+function loadDataPassword() {
+    try {
+        const saved = localStorage.getItem('shiftPlannerDataPwd');
+        if (saved) dataPassword = saved;
+    } catch(e) {}
+}
+
+function saveDataPassword(pwd) {
+    dataPassword = pwd;
+    try { localStorage.setItem('shiftPlannerDataPwd', pwd); } catch(e) {}
+}
+
+// ── Shared comment token — admin embeds this once so all viewers can push comments ──
+// Set this via 🐙 GitHub Sync → 💬 Set Comment Token, then re-download and commit HTML.
+// SHARED_COMMENT_TOKEN is intentionally in the HTML so all users inherit it automatically.
+// Note: COMMENTS_SHARED_TOKEN is declared below — SHARED_COMMENT_TOKEN picks it up at runtime via cmtToken()
+let SHARED_COMMENT_TOKEN = ''; // filled from localStorage or baked in at download time
+
 // ── Comment Sync — uses a SHARED token embedded in the HTML ──
 // The admin sets this once. All users (locked or unlocked) can read/write
 // comments without any personal login or per-user setup.
@@ -859,6 +1055,9 @@ let loginTab    = 'editor'; // which tab is active in login modal
 // Select-mode state
 let selectMode    = false;
 let selectedCells = new Set();   // "wIndex_dIndex"
+
+// lateShiftTypes is global so placeShiftsGreedyFair can access it
+let lateShiftTypes = ['8L','8M','ImL'];
 
 // ── Undo / Redo ──
 const UNDO_LIMIT = 20;
@@ -1036,12 +1235,20 @@ function getHolidayName(dIndex) {
 // ─────────────────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────────────────
-window.onload = () => {
+window.onload = () => { try {
     allMonthsData = JSON.parse(localStorage.getItem('shiftPlannerAllMonthsV23')) || {};
 
     // Load GitHub config
     const savedSPCfg = localStorage.getItem('shiftPlannerSPConfig');
     if (savedSPCfg) { try { spConfig = { ...spConfig, ...JSON.parse(savedSPCfg) }; } catch(e){} }
+    // Load saved comment token
+    try {
+        const savedCmt = localStorage.getItem('shiftPlannerCmtToken');
+        if (savedCmt) { SHARED_COMMENT_TOKEN = savedCmt; COMMENTS_SHARED_TOKEN = savedCmt; }
+    } catch(e) {}
+    // Load data encryption password
+    loadDataPassword();
+
     // Apply initial lock state (always start locked)
     applyLockState();
 
@@ -1102,6 +1309,7 @@ window.onload = () => {
     syncDropdownsToKey(initKey);
     document.getElementById('monthPicker').value = initKey;
     changeMonth(true);
+    if (typeof initMobileView === 'function') initMobileView();
     if (currentLang === 'de') applyLang();
     updateFieldGuide();
 
@@ -1128,6 +1336,11 @@ window.onload = () => {
             if (el) el.style.opacity = use6H ? '1' : '0.35';
         });
     });
+} catch(e) {
+    console.error('ShiftPlanner init error:', e);
+    const bar = document.getElementById('initErrorBar');
+    if (bar) { bar.style.display='block'; bar.textContent='❌ Init error: '+e.message+' (line '+e.lineNumber+') — try clearing cache below or pressing F12 for details.'; }
+}
 };
 
 // ─────────────────────────────────────────────────────────
@@ -1409,6 +1622,10 @@ function addWorkerFromForm() {
     const immoEarlyPct = (immo === 'Fixed' && immoShiftPref === 'Mixed')
         ? parseInt(document.getElementById('workerImmoRatio').value)
         : null;
+    const sumMode = (document.getElementById('workerSummerMode') || {value:'none'}).value;
+    const sumWeek = sumMode === 'var2' ? parseInt((document.getElementById('workerSummerWeek') || {value:'0'}).value) : 0;
+    const sumMonths = getSummerMonthsFromCheckboxes('wSum');
+
     workers.push({
         name,
         system:   document.getElementById('workerSystem').value,
@@ -1419,6 +1636,9 @@ function addWorkerFromForm() {
         immoEarlyPct,
         fixedOff,
         fixed6HDay,
+        summerMode:       sumMode,
+        summerWeekOffset: sumWeek,
+        summerMonths:     sumMonths,
         shifts:   Array(daysInMonth).fill('-'),
         requests: Array(daysInMonth).fill(false)
     });
@@ -1468,12 +1688,52 @@ function openEditModal(index) {
 
     editToggleImmo();
     editToggle22h();
+
+    // Summer schedule
+    const sm = document.getElementById('editSummerMode');
+    if (sm) {
+        sm.value = w.summerMode || 'none';
+        editToggleSummer();
+    }
+    const sw = document.getElementById('editSummerWeek');
+    if (sw) sw.value = w.summerWeekOffset != null ? w.summerWeekOffset : 0;
+    setSummerMonthCheckboxes('editSum', w.summerMonths || [5,6,7,8]);
+
     document.getElementById('editWorkerModal').style.display = 'block';
 }
 
 function closeEditModal() {
     editingWorkerIndex = null;
     document.getElementById('editWorkerModal').style.display = 'none';
+}
+
+function editToggleSummer() {
+    const mode = document.getElementById('editSummerMode').value;
+    document.getElementById('editSummerWeekRow').style.display = mode === 'var2' ? 'block' : 'none';
+}
+
+function toggleWorkerSummer() {
+    const mode = document.getElementById('workerSummerMode').value;
+    const row = document.getElementById('workerSummerWeekRow');
+    if (row) row.style.display = mode === 'var2' ? 'block' : 'none';
+}
+
+function getSummerMonthsFromCheckboxes(prefix) {
+    const months = [];
+    [5,6,7,8].forEach(m => {
+        const ids = { 5:'May', 6:'Jun', 7:'Jul', 8:'Aug' };
+        const el = document.getElementById(prefix + ids[m]);
+        if (el && el.checked) months.push(m);
+    });
+    return months;
+}
+
+function setSummerMonthCheckboxes(prefix, months) {
+    const ids = { 5:'May', 6:'Jun', 7:'Jul', 8:'Aug' };
+    [5,6,7,8].forEach(m => {
+        const el = document.getElementById(prefix + ids[m]);
+        if (el) el.checked = (months || []).includes(m);
+    });
 }
 
 function editToggle22h() {
@@ -1518,6 +1778,12 @@ function saveEditWorker() {
     w.fixed6HDay    = fixed6HDay;
     w.fixedOff      = fixedOff;
 
+    // Summer schedule
+    const sumMode = document.getElementById('editSummerMode').value;
+    w.summerMode       = sumMode;
+    w.summerWeekOffset = sumMode === 'var2' ? parseInt(document.getElementById('editSummerWeek').value) : 0;
+    w.summerMonths     = getSummerMonthsFromCheckboxes('editSum');
+
     closeEditModal();
     saveData();
     renderTable();
@@ -1529,13 +1795,29 @@ function saveEditWorker() {
 
 function updateShift(wIndex, dIndex, value) {
     if (!isEditMode) {
-        // Revert the dropdown to the actual current value
         const sel = document.querySelector(`.shift-select[data-w="${wIndex}"][data-d="${dIndex}"]`);
         if (sel) sel.value = workers[wIndex].shifts[dIndex];
         requireEdit('Edit Shift');
         return;
     }
-    pushUndo(); workers[wIndex].shifts[dIndex]=value; saveData(); renderTable();
+    pushUndo();
+    workers[wIndex].shifts[dIndex] = value;
+    saveData();
+
+    // Surgical update — repaint just the affected cell without rebuilding the whole table
+    const sel = document.querySelector(`.shift-select[data-w="${wIndex}"][data-d="${dIndex}"]`);
+    if (sel) {
+        const bgColor = getColor(value);
+        sel.style.backgroundColor = bgColor;
+        sel.style.color = ''; // reset; rest violations will show on full re-render
+        sel.innerHTML = getDropdownOptions(value);
+    }
+    // Update footer totals
+    renderTableFoot();
+    // Update stats if visible
+    if (document.getElementById('statsToggle') && document.getElementById('statsToggle').checked) {
+        renderStats();
+    }
 }
 function updateRequest(wIndex, dIndex, isChecked) { workers[wIndex].requests[dIndex]=isChecked; saveData(); renderTable(); }
 function updateComment(dIndex, text) { dailyComments[dIndex]=text; saveData(); scheduleCommentSync(); }
@@ -1882,6 +2164,39 @@ function getDropdownOptions(currentShift) {
 // ─────────────────────────────────────────────────────────
 //  Render Table
 // ─────────────────────────────────────────────────────────
+function renderTableFoot() {
+    const ftLabel = currentLang==='de' ? 'Ca. Wochenstunden:' : 'Approx. Weekly Hours:';
+    const wkLabel = currentLang==='de' ? '(Wo1|Wo2|Wo3|Wo4|Wo5)' : '(Wk1|Wk2|Wk3|Wk4|Wk5)';
+    let footHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:11px;">
+        ${ftLabel}<br><small>${wkLabel}</small></th>`;
+    workers.forEach(w => {
+        const wkHrs = [0,0,0,0,0];
+        w.shifts.forEach((s,i) => { wkHrs[Math.min(Math.floor(i/7),4)] += getShiftHours(s); });
+        footHTML += `<td style="font-size:10px; line-height:1.4;">
+            1:${wkHrs[0]}h<br>2:${wkHrs[1]}h<br>3:${wkHrs[2]}h<br>4:${wkHrs[3]}h<br>5:${wkHrs[4]}h</td>`;
+    });
+    footHTML += `<td colspan="16"></td></tr>`;
+
+    // ── Footer: Total Late Shifts ──
+    const lateLabel = use13H ? '(8L, 8M, 13H)' : '(8L ≤22:30 | 8M ≤20:00)';
+    let latesHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:12px; color:#c0392b;">
+        Total Late Shifts:<br><small>${lateLabel}</small></th>`;
+    workers.forEach(w => {
+        const lateTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
+        const nL  = w.shifts.filter(s => getBaseShift(s)==='8L').length;
+        const nM  = w.shifts.filter(s => getBaseShift(s)==='8M').length;
+        const n13 = use13H ? w.shifts.filter(s => getBaseShift(s)==='13H').length : 0;
+        const nIL = w.shifts.filter(s => getBaseShift(s)==='ImL').length;
+        const total = nL + nM + n13 + nIL;
+        const detail = `<span title="8L(22:30): ${nL} | 8M(20:00): ${nM}${use13H?' | 13H: '+n13:''}${nIL?' | ImL: '+nIL:''}" style="cursor:help;">
+            ${total}<br><small style="font-size:9px; color:#e67e22;">${nL}L / ${nM}M${use13H&&n13?' / '+n13+'×13':''}`;
+        latesHTML += `<td style="font-size:13px; font-weight:bold; color:#c0392b; line-height:1.3;">${detail}</small></span></td>`;
+    });
+    latesHTML += `<td colspan="16"></td></tr>`;
+
+    document.getElementById('tableFoot').innerHTML = footHTML + latesHTML;
+}
+
 function renderTable() {
     if (!currentYear) return;
     const maxVac    = parseInt(document.getElementById('maxVacation').value)    || 0;
@@ -2127,37 +2442,16 @@ function renderTable() {
     // ── Footer: Weekly Hours ──
     const ftLabel = currentLang==='de' ? 'Ca. Wochenstunden:' : 'Approx. Weekly Hours:';
     const wkLabel = currentLang==='de' ? '(Wo1|Wo2|Wo3|Wo4|Wo5)' : '(Wk1|Wk2|Wk3|Wk4|Wk5)';
-    let footHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:11px;">
-        ${ftLabel}<br><small>${wkLabel}</small></th>`;
-    workers.forEach(w => {
-        const wkHrs = [0,0,0,0,0];
-        w.shifts.forEach((s,i) => { wkHrs[Math.min(Math.floor(i/7),4)] += getShiftHours(s); });
-        footHTML += `<td style="font-size:10px; line-height:1.4;">
-            1:${wkHrs[0]}h<br>2:${wkHrs[1]}h<br>3:${wkHrs[2]}h<br>4:${wkHrs[3]}h<br>5:${wkHrs[4]}h</td>`;
-    });
-    footHTML += `<td colspan="16"></td></tr>`;
+    renderTableFoot();
 
-    // ── Footer: Total Late Shifts ──
-    const lateLabel = use13H ? '(8L, 8M, 13H)' : '(8L ≤22:30 | 8M ≤20:00)';
-    let latesHTML = `<tr><th class="sticky-col" colspan="3" style="text-align:right; font-size:12px; color:#c0392b;">
-        Total Late Shifts:<br><small>${lateLabel}</small></th>`;
-    workers.forEach(w => {
-        const lateTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
-        const nL  = w.shifts.filter(s => getBaseShift(s)==='8L').length;
-        const nM  = w.shifts.filter(s => getBaseShift(s)==='8M').length;
-        const n13 = use13H ? w.shifts.filter(s => getBaseShift(s)==='13H').length : 0;
-        const nIL = w.shifts.filter(s => getBaseShift(s)==='ImL').length;
-        const total = nL + nM + n13 + nIL;
-        const detail = `<span title="8L(22:30): ${nL} | 8M(20:00): ${nM}${use13H?' | 13H: '+n13:''}${nIL?' | ImL: '+nIL:''}" style="cursor:help;">
-            ${total}<br><small style="font-size:9px; color:#e67e22;">${nL}L / ${nM}M${use13H&&n13?' / '+n13+'×13':''}`;
-        latesHTML += `<td style="font-size:13px; font-weight:bold; color:#c0392b; line-height:1.3;">${detail}</small></span></td>`;
-    });
-    latesHTML += `<td colspan="16"></td></tr>`;
-
-    document.getElementById('tableFoot').innerHTML = footHTML + latesHTML;
 
     // Refresh stats if visible
     if (document.getElementById('statsToggle').checked) renderStats();
+    // Refresh mobile view if visible
+    if (window.innerWidth <= 768 && typeof renderMobileView === 'function') {
+        populateMobWorkerSel();
+        renderMobileView();
+    }
 }
 
 function clearBoard() {
@@ -2180,10 +2474,11 @@ function getDayCount(dayIndex, type) {
 function autoGenerate() {
     if (!requireEdit("Auto-Fill")) return;
     if (!confirm('Auto-fill balanced schedule based on your Daily Targets?\nPre-filled shifts (VAC, SICK, 6H, FB, etc.) will be kept.')) return;
-    pushUndo();
+    try {
+        pushUndo();
 
     const overwriteList  = ['-','OFF'];
-    const lateShiftTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
+    lateShiftTypes = use13H ? ['8L','8M','13H','ImL'] : ['8L','8M','ImL'];
 
     // Step 1: Reset all workers
     workers.forEach(worker => {
@@ -2197,12 +2492,24 @@ function autoGenerate() {
 
     // Step 2: Fixed-preference workers (Immo, Early Only, Late Only, 22h) — shuffle once
     const fixedPrefIndices = workers.map((_,i)=>i)
-        .filter(i => { const w=workers[i]; return w.immo==='Fixed'||w.pref==='Early'||w.pref==='Late'||parseInt(w.contract)===22; })
+        .filter(i => {
+            const w=workers[i];
+            const inSummer = (w.summerMode && w.summerMode !== 'none') &&
+                             (w.summerMonths || [5,6,7,8]).includes(currentMonth);
+            if (inSummer) return false; // summer mode handles them in Step 4
+            return w.immo==='Fixed'||w.pref==='Early'||w.pref==='Late'||parseInt(w.contract)===22;
+        })
         .sort(() => Math.random()-0.5);
 
     // Mixed-preference workers — re-sorted by late count each week for fairness
     const mixedIndices = workers.map((_,i)=>i)
-        .filter(i => { const w=workers[i]; return w.immo!=='Fixed'&&w.pref==='Any'&&parseInt(w.contract)!==22; });
+        .filter(i => {
+            const w=workers[i];
+            const inSummer = (w.summerMode && w.summerMode !== 'none') &&
+                             (w.summerMonths || [5,6,7,8]).includes(currentMonth);
+            if (inSummer) return true; // summer workers always go through Step 4
+            return w.immo!=='Fixed'&&w.pref==='Any'&&parseInt(w.contract)!==22;
+        });
 
     // Step 3: Fixed-pref workers — all weeks
     fixedPrefIndices.forEach(wIndex => {
@@ -2275,6 +2582,73 @@ function autoGenerate() {
             for (let d2=startDay; d2<endDay; d2++)
                 prefilled += getShiftHours(worker.shifts[d2]);
 
+            // ── Summer schedule override ──
+            const sumMode    = worker.summerMode || 'none';
+            const sumMonths  = worker.summerMonths || [5,6,7,8];
+            const inSummer   = sumMode !== 'none' && sumMonths.includes(currentMonth);
+
+            if (inSummer) {
+                const shiftsNeeded = Math.max(0, Math.floor((contractHrs - prefilled) / 8));
+                let wkPool = [];
+
+                if (sumMode === 'nurFruh') {
+                    // Early only — fill with 8E
+                    for (let i = 0; i < shiftsNeeded; i++) wkPool.push('8E');
+                    placeShiftsGreedy(worker, wkPool, startDay, endDay);
+
+                } else if (sumMode === 'nurSpat') {
+                    // Late only — mix 8L and 8M for IR2 vs IR3/IR4 fairness
+                    // Count existing 8L vs 8M to balance over the month
+                    const cur8L = worker.shifts.filter(s => getBaseShift(s) === '8L').length;
+                    const cur8M = worker.shifts.filter(s => getBaseShift(s) === '8M').length;
+                    for (let i = 0; i < shiftsNeeded; i++) {
+                        // Push more 8M if worker has had more 8L, and vice versa
+                        wkPool.push((cur8L + wkPool.filter(s=>s==='8L').length) <=
+                                    (cur8M + wkPool.filter(s=>s==='8M').length) ? '8L' : '8M');
+                    }
+                    placeShiftsGreedy(worker, wkPool, startDay, endDay);
+
+                } else if (sumMode === 'var1') {
+                    // Alternating early/late weeks — but late weeks mix in 8M (Mittel) for fairness
+                    const globalWeek = getContinuousWeek(currentYear, currentMonth, startDay);
+                    const isEarlyWeek = (globalWeek + (wIndex % 2)) % 2 === 0;
+                    if (isEarlyWeek) {
+                        for (let i = 0; i < shiftsNeeded; i++) wkPool.push('8E');
+                        placeShiftsGreedy(worker, wkPool, startDay, endDay);
+                    } else {
+                        // Late week: ~50% 8L (22:30), ~50% 8M (20:00) for fairness
+                        for (let i = 0; i < shiftsNeeded; i++)
+                            wkPool.push(i % 2 === 0 ? '8L' : '8M');
+                        worker._weekLateQuota = shiftsNeeded;
+                        worker._weekLateCount = 0;
+                        placeShiftsGreedyFair(worker, wkPool, startDay, endDay);
+                        delete worker._weekLateQuota;
+                        delete worker._weekLateCount;
+                    }
+
+                } else if (sumMode === 'var2') {
+                    // Free mix but phase-offset by entry week — same as New system with offset
+                    const offset = worker.summerWeekOffset || 0;
+                    const globalWeek = getContinuousWeek(currentYear, currentMonth, startDay);
+                    const isHigh = ((globalWeek + offset + wIndex) % 2 !== 0);
+                    const targetW = isHigh
+                        ? (contractHrs===40?43:contractHrs===32?35:contractHrs===24?27:contractHrs)
+                        : (contractHrs===40?37:contractHrs===32?29:contractHrs===24?21:contractHrs);
+                    const mandatory = (use13H&&contractHrs>=24?13:0) + (use6H&&contractHrs>=24&&isHigh?6:0);
+                    const wkShifts2 = Math.max(0, Math.floor((targetW - prefilled - mandatory) / 8));
+                    if (use13H && contractHrs>=24) wkPool.push('13H');
+                    if (use6H  && contractHrs>=24 && isHigh) wkPool.push('6H');
+                    for (let i = 0; i < wkShifts2; i++) wkPool.push('8H-ANY');
+                    const lateQuota2 = Math.round(wkPool.length * 0.4);
+                    worker._weekLateQuota = lateQuota2;
+                    worker._weekLateCount = 0;
+                    placeShiftsGreedyFair(worker, wkPool, startDay, endDay);
+                    delete worker._weekLateQuota;
+                    delete worker._weekLateCount;
+                }
+                return; // skip normal logic below
+            } // end if (inSummer)
+
             // How many shifts to fill this week
             let wkShifts = 0;
             if (worker.system==='New') {
@@ -2314,7 +2688,12 @@ function autoGenerate() {
         });
     }
 
-    saveData(); renderTable();
+        saveData(); renderTable();
+    } catch(e) {
+        console.error('Auto-Fill error:', e);
+        alert('❌ Auto-Fill error: ' + e.message + '\n\nCheck console (F12) for details. Also make sure you have added workers before running Auto-Fill.');
+        renderTable();
+    }
 }
 
 function placeShiftsGreedy(worker, pool, startDay, endDay) {
@@ -2843,6 +3222,9 @@ function downloadAsHTML() {
 <\/script>`;
 
     let html = document.documentElement.outerHTML;
+    // Bake current password hashes into downloaded HTML so new browsers are protected
+    if (adminHash)  html = html.replace(/let adminHash\s*=\s*null/, 'let adminHash = ' + JSON.stringify(adminHash));
+    if (editorHash) html = html.replace(/let editorHash\s*=\s*null/, 'let editorHash = ' + JSON.stringify(editorHash));
     // Insert seed script just before </head>
     html = html.replace('</head>', seedScript + '\n</head>');
 
@@ -3300,18 +3682,18 @@ function applyLockState() {
     if (currentRole === 'admin') {
         body.classList.add('app-admin');
         isEditMode = true;
-        if (lockBtn) { lockBtn.textContent = '⚙️ Admin'; lockBtn.className = 'unlocked'; }
-        if (badge)   { badge.textContent = '⚙️ Admin'; badge.className = 'admin'; }
+        if (lockBtn) { lockBtn.textContent = '⚙️ Admin'; lockBtn.className = 'unlocked desktop-only'; }
+        if (badge)   { badge.textContent = '⚙️ Admin'; badge.className = 'admin desktop-only'; }
     } else if (currentRole === 'editor') {
         body.classList.add('app-editor');
         isEditMode = true;
-        if (lockBtn) { lockBtn.textContent = '✏️ Editor'; lockBtn.className = 'unlocked'; }
-        if (badge)   { badge.textContent = '✏️ Editor'; badge.className = 'editor'; }
+        if (lockBtn) { lockBtn.textContent = '✏️ Editor'; lockBtn.className = 'unlocked desktop-only'; }
+        if (badge)   { badge.textContent = '✏️ Editor'; badge.className = 'editor desktop-only'; }
     } else {
         body.classList.add('app-locked');
         isEditMode = false;
-        if (lockBtn) { lockBtn.textContent = '🔒 Login'; lockBtn.className = 'locked'; }
-        if (badge)   { badge.textContent = '👁 Viewer'; badge.className = 'viewer'; }
+        if (lockBtn) { lockBtn.textContent = '🔒 Login'; lockBtn.className = 'locked desktop-only'; }
+        if (badge)   { badge.textContent = '👁 Viewer'; badge.className = 'viewer desktop-only'; }
     }
 }
 
@@ -3456,7 +3838,7 @@ async function saveNewPassword() { return saveAllPasswords(); }
 
 // Load all password hashes from GitHub config
 async function spLoadConfig() {
-    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) return;
+    if (!spConfig.siteUrl || !spConfig.folderPath) return; // only need owner+repo to read
     try {
         const content = await ghReadFile(spCfgFile);
         if (!content) return;
@@ -3491,16 +3873,36 @@ function ghHeaders() {
 
 // Read a file from GitHub → returns decoded text or null if not found
 async function ghReadFile(file) {
+    // Try unauthenticated raw URL first (works for public repos - no PAT needed)
+    const owner = spConfig.siteUrl, repo = spConfig.folderPath;
+    if (owner && repo) {
+        try {
+            const rawUrl = 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/main/' + file + '?t=' + Date.now();
+            const rr = await fetch(rawUrl);
+            if (rr.ok) {
+                const text = await rr.text();
+                return decryptData(text); // decrypt if encrypted
+            }
+        } catch(e) {
+            if (e.message && (e.message.includes('encrypted') || e.message.includes('password'))) throw e;
+            /* fall through to API */
+        }
+    }
+    // Fall back to authenticated API (private repos or when raw fails)
+    if (!spConfig.fileName) return null;
     const r = await fetch(ghApiUrl(file), { headers: ghHeaders() });
     if (r.status === 404) return null;
-    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    if (!r.ok) throw new Error('GitHub API ' + r.status + ': ' + await r.text());
     const data = await r.json();
-    // UTF-8-safe decode to match btoa(unescape(encodeURIComponent(str))) on write
-    return decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+    const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+    return decryptData(text); // decrypt if encrypted
 }
 
 // Write a file to GitHub (create or update)
 async function ghWriteFile(file, content, commitMsg) {
+    // Encrypt before pushing if data password is set
+    const payload = encryptData(content);
+
     // First get the current SHA (needed for updates)
     let sha = undefined;
     try {
@@ -3510,7 +3912,7 @@ async function ghWriteFile(file, content, commitMsg) {
 
     const body = {
         message: commitMsg || `Shift Planner update · ${new Date().toISOString()}`,
-        content: btoa(unescape(encodeURIComponent(content)))
+        content: btoa(unescape(encodeURIComponent(payload)))
     };
     if (sha) body.sha = sha;
 
@@ -3533,6 +3935,11 @@ function openSPModal() {
     if (cmtField) cmtField.value = COMMENTS_SHARED_TOKEN || '';
     const cmtEl = document.getElementById('cmtStatus');
     if (cmtEl) cmtEl.style.display = 'none';
+    // Pre-fill data password field
+    const dpEl = document.getElementById('spDataPwd');
+    if (dpEl) dpEl.value = dataPassword || '';
+    const dpStatus = document.getElementById('spDataPwdStatus');
+    if (dpStatus) dpStatus.style.display = 'none';
     spHideStatus();
     document.getElementById('spModal').style.display = 'block';
 }
@@ -3604,8 +4011,8 @@ async function spTestConnection() {
 
 // Pull from GitHub → load into local session
 async function spPull(silent = false) {
-    if (!spConfig.siteUrl || !spConfig.folderPath || !spConfig.fileName) {
-        if (!silent) spShowModalStatus('⚠️ Please configure GitHub settings first.', '#fff3cd', '#856404');
+    if (!spConfig.siteUrl || !spConfig.folderPath) {
+        if (!silent) spShowModalStatus('⚠️ Please configure GitHub owner and repo first.', '#fff3cd', '#856404');
         return;
     }
     if (!silent) spShowModalStatus('⬇️ Pulling from GitHub...', '#f6f8fa', '#24292f');
@@ -3693,7 +4100,8 @@ function cmtShowStatus(msg, bg, color) {
 
 // The token to use for comments — shared token if set, else fall back to personal PAT
 function cmtToken() {
-    return COMMENTS_SHARED_TOKEN || spConfig.fileName || '';
+    // Shared embedded token first, then personal PAT as fallback
+    return SHARED_COMMENT_TOKEN || COMMENTS_SHARED_TOKEN || spConfig.fileName || '';
 }
 
 function cmtReady() {
@@ -3820,9 +4228,35 @@ async function ghWriteFileWith(file, content, token, commitMsg) {
     return await r.json();
 }
 
+// Clear all app localStorage keys (for testing / troubleshooting)
+function clearAppCache() {
+    if (!confirm('🗑️ Clear Cache\n\nThis will remove all locally stored shift data, settings, and GitHub config from this browser.\n\nData already saved to GitHub will NOT be affected.\n\nContinue?')) return;
+    const keys = Object.keys(localStorage).filter(k =>
+        k.startsWith('shiftPlanner') || k.startsWith('SHARED_COMMENT')
+    );
+    keys.forEach(k => localStorage.removeItem(k));
+    alert(`✅ Cleared ${keys.length} cached item(s).\n\nReloading page...`);
+    location.reload();
+}
+
+// Set / update the data encryption password from the sync modal
+function setDataPassword() {
+    const el  = document.getElementById('spDataPwd');
+    const pwd = el ? el.value.trim() : '';
+    const statusEl = document.getElementById('spDataPwdStatus');
+    saveDataPassword(pwd);
+    if (statusEl) {
+        statusEl.textContent = pwd
+            ? '✅ Data password saved — all future pushes will be encrypted with this password.'
+            : '⚠️ Data password cleared — files will be written unencrypted.';
+        statusEl.style.color  = pwd ? '#1a7f37' : '#856404';
+        statusEl.style.display = 'block';
+    }
+}
+
 // Smart GitHub sync button — opens setup if not configured, sync modal if already connected
 function openGHSyncOrSetup() {
-    const hasConfig = spConfig && spConfig.siteUrl && spConfig.folderPath && spConfig.fileName;
+    const hasConfig = spConfig && spConfig.siteUrl && spConfig.folderPath;
     if (hasConfig) {
         openSPModal();
     } else {
@@ -3831,7 +4265,7 @@ function openGHSyncOrSetup() {
             const saved = localStorage.getItem('shiftPlannerSPConfig');
             if (saved) {
                 const c = JSON.parse(saved);
-                if (c.siteUrl && c.folderPath && c.fileName) {
+                if (c.siteUrl && c.folderPath) {
                     spConfig.siteUrl    = c.siteUrl;
                     spConfig.folderPath = c.folderPath;
                     spConfig.fileName   = c.fileName;
@@ -3842,6 +4276,147 @@ function openGHSyncOrSetup() {
         } catch(e) {}
         openSetupPopup();
     }
+}
+
+
+// ── Set / bake the shared comment token ──
+function setCommentToken() {
+    const tok = (document.getElementById('cmtTokenInput') || {value:''}).value.trim();
+    if (!tok) { alert('Please paste a PAT first.'); return; }
+    SHARED_COMMENT_TOKEN = tok;
+    COMMENTS_SHARED_TOKEN = tok; // keep both in sync
+    // Persist in localStorage so it survives page refresh until admin re-downloads HTML
+    try { localStorage.setItem('shiftPlannerCmtToken', tok); } catch(e){}
+    spShowModalStatus('✅ Comment token saved in memory. Download HTML (⬇️) and commit to repo to bake it in permanently.', '#e6ffe6', '#107c10');
+}
+// ─────────────────────────────────────────────────────────
+//  Mobile View
+// ─────────────────────────────────────────────────────────
+let mobYear = null, mobMonth = null;
+
+function initMobileView() {
+    // Default to current desktop-selected month if available, else today
+    if (currentYear && currentMonth) {
+        mobYear  = currentYear;
+        mobMonth = currentMonth;
+    } else {
+        const t = new Date();
+        mobYear  = t.getFullYear();
+        mobMonth = t.getMonth() + 1;
+    }
+    populateMobWorkerSel();
+    renderMobileView();
+}
+
+function populateMobWorkerSel() {
+    const sel = document.getElementById('mobWorkerSel');
+    if (!sel) return;
+    const saved = localStorage.getItem('shiftPlannerMobWorker') || '';
+    sel.innerHTML = '<option value="">— Select your name —</option>';
+    workers.forEach((w, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = w.name;
+        if (w.name === saved) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function mobPrevMonth() {
+    mobMonth--;
+    if (mobMonth < 1) { mobMonth = 12; mobYear--; }
+    renderMobileView();
+}
+
+function mobNextMonth() {
+    mobMonth++;
+    if (mobMonth > 12) { mobMonth = 1; mobYear++; }
+    renderMobileView();
+}
+
+const MOB_SHIFT_LABELS = {
+    '8E':'Early (08:00–16:00)', '8L':'Late (12:00–20:30)', '8M':'Mid (09:30–18:00)',
+    '13H':'Long (08:00–21:00)', '6H':'Short (6h)', 'ImE':'Immo Early', 'ImL':'Immo Late',
+    'VAC':'Vacation 🏖', 'SICK':'Sick 🤒', 'FB':'Training 📚', 'RB':'On-Call 📞',
+    'OFF':'Day Off', '-':'—', 'K':'Sick 🤒', 'U':'Vacation 🏖', 'DF':'Day Off',
+    'PF':'Leave 🌿', 'Offc':'Office', 'LSS':'LSS'
+};
+
+function renderMobileView() {
+    const navLabel = document.getElementById('mobNavLabel');
+    const header   = document.getElementById('mobMonthLabel');
+    const list     = document.getElementById('mobDayList');
+    if (!navLabel || !list) return;
+
+    const monthNames = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+    const monthName  = monthNames[(mobMonth||1)-1] + ' ' + (mobYear||new Date().getFullYear());
+    navLabel.textContent = monthName;
+    if (header) header.textContent = monthName;
+
+    const sel = document.getElementById('mobWorkerSel');
+    const wIdx = sel ? parseInt(sel.value) : NaN;
+
+    // Save selected worker name
+    if (!isNaN(wIdx) && workers[wIdx]) {
+        localStorage.setItem('shiftPlannerMobWorker', workers[wIdx].name);
+    }
+
+    if (isNaN(wIdx) || !workers[wIdx]) {
+        list.innerHTML = '<div style="text-align:center; color:#aaa; padding:30px 0; font-size:14px;">Select your name above to see your shifts</div>';
+        return;
+    }
+
+    // Load this month's data
+    const key = `${mobYear}-${String(mobMonth).padStart(2,'0')}`;
+    const saved = allMonthsData[key];
+    if (!saved || !saved.workers) {
+        list.innerHTML = '<div style="text-align:center; color:#aaa; padding:30px 0; font-size:14px;">No data for this month yet</div>';
+        return;
+    }
+
+    // Find worker by name
+    const workerName = workers[wIdx].name;
+    const mWorker = saved.workers.find(w => w.name === workerName);
+    if (!mWorker) {
+        list.innerHTML = '<div style="text-align:center; color:#aaa; padding:30px 0; font-size:14px;">Worker not found in this month\'s data</div>';
+        return;
+    }
+
+    const days = new Date(mobYear, mobMonth, 0).getDate();
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    let html = '';
+    for (let d = 0; d < days; d++) {
+        const date = new Date(mobYear, mobMonth - 1, d + 1);
+        const dow  = date.getDay();
+        const dateStr = `${mobYear}-${String(mobMonth).padStart(2,'0')}-${String(d+1).padStart(2,'0')}`;
+        const isToday  = dateStr === todayStr;
+        const isWeekend = dow === 0 || dow === 6;
+
+        const rawShift = (mWorker.shifts && mWorker.shifts[d]) || '-';
+        const base = rawShift.replace(/[^A-Za-z0-9\-]/g,'') || '-';
+        const isOff = ['-','OFF',''].includes(base);
+        const label = MOB_SHIFT_LABELS[base] || rawShift;
+
+        // Get comment for this day
+        const dayComment = (saved.dailyComments && saved.dailyComments[d]) || '';
+
+        const classes = ['mob-day',
+            isToday ? 'today' : '',
+            !isOff ? 'has-shift' : 'day-off'
+        ].filter(Boolean).join(' ');
+
+        html += `<div class="${classes}">
+            <div class="mob-day-date">${dayNames[dow]} ${d+1} ${monthNames[mobMonth-1]}${isWeekend ? ' 🏠' : ''}${isToday ? ' ◀ TODAY' : ''}</div>
+            <div class="mob-day-shift">${isOff ? '—' : base}</div>
+            <div class="mob-day-label">${isOff ? 'Day off / Not assigned' : label}</div>
+            ${dayComment ? '<div class="mob-day-cmt">💬 ' + dayComment + '</div>' : ''}
+        </div>`;
+    }
+    list.innerHTML = html;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -3857,7 +4432,7 @@ function openGHSyncOrSetup() {
             <h2 style="margin:6px 0 0 0; color:#24292f; font-size:19px;">Connect to GitHub</h2>
             <p style="color:#666; font-size:12px; margin:6px 0 0 0;">Enter your details once — saved in this browser only.</p>
         </div>
-        <div style="display:grid; gap:12px;">
+        <div style="display:grid; gap:10px;">
             <div>
                 <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px;">GitHub Username / Org</label>
                 <input id="su_owner" type="text" placeholder="e.g. myusername"
@@ -3868,21 +4443,34 @@ function openGHSyncOrSetup() {
                 <input id="su_repo" type="text" placeholder="e.g. shift-planner"
                     style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;">
             </div>
-            <div>
-                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px;">Personal Access Token (PAT)</label>
-                <input id="su_token" type="password" placeholder="github_pat_... or ghp_..."
+            <div style="background:#f0fff4; border:1px solid #a9dfbf; border-radius:6px; padding:10px;">
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px; color:#1a7f37;">Personal Access Token (PAT) <span style="font-weight:normal; color:#888;">— optional for viewers</span></label>
+                <input id="su_token" type="password" placeholder="Leave blank if you only view &amp; comment"
                     style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;"
                     onkeydown="if(event.key==='Enter') suConnect()">
-                <small style="color:#888; font-size:11px;">GitHub Settings → Developer settings → Personal access tokens → Fine-grained → Contents: Read & Write</small>
+                <div style="font-size:11px; color:#666; margin-top:5px; line-height:1.5;">
+                    <strong>Viewers/commenters:</strong> leave blank — comments use a shared token automatically.<br>
+                    <strong>Editors/Admins:</strong> enter your own PAT (Contents: Read &amp; Write).
+                </div>
+            </div>
+            <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:10px;">
+                <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:3px; color:#856404;">🔐 Data Password <span style="font-weight:normal; color:#888;">— shared with all staff</span></label>
+                <input id="su_datapwd" type="password" placeholder="Team data password (ask your admin)"
+                    style="width:100%; box-sizing:border-box; padding:9px; font-size:14px; border:2px solid #ddd; border-radius:6px;"
+                    onkeydown="if(event.key==='Enter') suConnect()">
+                <div style="font-size:11px; color:#666; margin-top:5px; line-height:1.5;">
+                    All shift data is AES-encrypted. Every team member uses the same password. Leave blank only if encryption isn't set up yet.
+                </div>
             </div>
         </div>
         <div id="su_error"  style="display:none; background:#fff0f0; border:1px solid #f5c6cb; border-radius:4px; padding:7px 10px; font-size:12px; color:#c0392b; margin-top:10px;"></div>
         <div id="su_status" style="display:none; background:#eaffea; border:1px solid #a9dfbf; border-radius:4px; padding:7px 10px; font-size:12px; color:#1a7f37; margin-top:10px;"></div>
-        <div style="display:flex; gap:10px; margin-top:16px;">
-            <button onclick="suConnect()" id="su_btn" style="flex:1; background:#0969da; color:white; border:none; padding:11px; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer;">🔌 Connect & Test</button>
-            <button onclick="suDismiss()" style="background:#eee; color:#555; border:none; padding:11px 16px; border-radius:6px; font-size:13px; cursor:pointer;">Skip</button>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+            <button onclick="suTest()" id="su_test_btn" style="flex:1; background:#6c757d; color:white; border:none; padding:11px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">🔍 Test</button>
+            <button onclick="suConnect()" id="su_btn" style="flex:1.4; background:#0969da; color:white; border:none; padding:11px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">✅ Connect</button>
+            <button onclick="suDismiss()" style="background:#eee; color:#555; border:none; padding:11px 14px; border-radius:6px; font-size:13px; cursor:pointer;">Skip</button>
         </div>
-        <p style="font-size:11px; color:#aaa; text-align:center; margin:10px 0 0 0;">Token stored only in this browser — never committed to GitHub.</p>
+        <p style="font-size:11px; color:#aaa; text-align:center; margin:10px 0 0 0;"><strong>Test</strong> checks your credentials without saving. <strong>Connect</strong> saves and starts syncing. <strong>Skip</strong> — view only, no sync.</p>
     </div>
 </div>
 <script>
@@ -3900,6 +4488,9 @@ function openGHSyncOrSetup() {
                 var r = document.getElementById('su_repo');
                 if (o && c.siteUrl)    o.value = c.siteUrl;
                 if (r && c.folderPath) r.value = c.folderPath;
+                var dp = document.getElementById('su_datapwd');
+                var savedPwd = localStorage.getItem('shiftPlannerDataPwd');
+                if (dp && savedPwd) dp.value = savedPwd;
             } catch(e) {}
         }
         el.style.display = 'flex';
@@ -3915,6 +4506,38 @@ function openGHSyncOrSetup() {
         if (el) el.style.display = 'none';
     };
 
+    // Shared helper: test GitHub connection
+    async function suCheckRepo(owner, repo, token) {
+        var headers = { 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        var r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, { headers: headers });
+        if (r.status === 401) throw new Error('Invalid token — check your PAT.');
+        if (r.status === 404) throw new Error('Repo not found — check owner and repo name. (Private repos need a PAT.)');
+        if (!r.ok) throw new Error('GitHub error ' + r.status);
+        return await r.json();
+    }
+
+    // Test only — no save
+    window.suTest = async function() {
+        var owner = (document.getElementById('su_owner').value || '').trim();
+        var repo  = (document.getElementById('su_repo').value  || '').trim();
+        var token = (document.getElementById('su_token').value || '').trim();
+        var err   = document.getElementById('su_error');
+        var stat  = document.getElementById('su_status');
+        var btn   = document.getElementById('su_test_btn');
+        err.style.display = 'none'; stat.style.display = 'none';
+        if (!owner || !repo) { err.textContent = 'Please enter your GitHub username and repository name.'; err.style.display = 'block'; return; }
+        btn.textContent = 'Testing...'; btn.disabled = true;
+        try {
+            var data = await suCheckRepo(owner, repo, token);
+            stat.textContent = '✅ Connection OK — ' + data.full_name + (data.private ? ' (private)' : ' (public)') + '. Ready to connect.';
+            stat.style.display = 'block';
+        } catch(e) {
+            err.textContent = '❌ ' + e.message; err.style.display = 'block';
+        }
+        btn.textContent = '🔍 Test'; btn.disabled = false;
+    };
+
     window.suConnect = async function() {
         var owner = (document.getElementById('su_owner').value || '').trim();
         var repo  = (document.getElementById('su_repo').value  || '').trim();
@@ -3922,24 +4545,20 @@ function openGHSyncOrSetup() {
         var err   = document.getElementById('su_error');
         var stat  = document.getElementById('su_status');
         var btn   = document.getElementById('su_btn');
-        err.style.display = 'none';
-        stat.style.display = 'none';
-        if (!owner || !repo || !token) {
-            err.textContent = 'Please fill in all three fields.';
+        err.style.display = 'none'; stat.style.display = 'none';
+        if (!owner || !repo) {
+            err.textContent = 'Please enter your GitHub username and repository name.';
             err.style.display = 'block'; return;
         }
-        btn.textContent = 'Testing...'; btn.disabled = true;
+        btn.textContent = 'Connecting...'; btn.disabled = true;
         try {
-            var r = await fetch('https://api.github.com/repos/' + owner + '/' + repo, {
-                headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token, 'X-GitHub-Api-Version': '2022-11-28' }
-            });
-            if (r.status === 401) throw new Error('Invalid token — check your PAT.');
-            if (r.status === 404) throw new Error('Repo not found — check owner and repo name.');
-            if (!r.ok) throw new Error('GitHub error ' + r.status);
-            var data = await r.json();
-            // Save using the same keys the main app uses
+            var data = await suCheckRepo(owner, repo, token);
+            // Save GitHub config
             var cfg = { siteUrl: owner, folderPath: repo, fileName: token, autoSync: false };
             localStorage.setItem('shiftPlannerSPConfig', JSON.stringify(cfg));
+            // Save data password
+            var dpwd = (document.getElementById('su_datapwd') || {value:''}).value.trim();
+            if (dpwd) localStorage.setItem('shiftPlannerDataPwd', dpwd);
             stat.textContent = 'Connected to ' + data.full_name + '! Loading config...';
             stat.style.display = 'block';
             btn.textContent = 'Connected!';
@@ -3949,6 +4568,9 @@ function openGHSyncOrSetup() {
                 spConfig.folderPath = repo;
                 spConfig.fileName   = token;
             }
+            // Apply data password to main app immediately
+            var dpwd2 = (document.getElementById('su_datapwd') || {value:''}).value.trim();
+            if (typeof saveDataPassword === 'function' && dpwd2) saveDataPassword(dpwd2);
             if (typeof spLoadConfig === 'function') spLoadConfig();
             if (typeof spSetStatus  === 'function') spSetStatus('🐙 ' + owner + '/' + repo + ' · Connected', '#f6f8fa', '#24292f');
             setTimeout(function() {
@@ -3972,7 +4594,7 @@ function openGHSyncOrSetup() {
     setTimeout(function() {
         var saved = localStorage.getItem('shiftPlannerSPConfig');
         var hasCfg = false;
-        if (saved) { try { var c = JSON.parse(saved); hasCfg = !!(c.siteUrl && c.folderPath && c.fileName); } catch(e){} }
+        if (saved) { try { var c = JSON.parse(saved); hasCfg = !!(c.siteUrl && c.folderPath); } catch(e){} }
         if (!hasCfg) suShow();
     }, 700);
 })();
