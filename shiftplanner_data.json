@@ -912,10 +912,6 @@
     "workers": [],
     "holidays": [
       {
-        "d": 0,
-        "name": "Staatsfeiertag"
-      },
-      {
         "d": 13,
         "name": "Christi Himmelfahrt"
       },
@@ -960,13 +956,13 @@
     ],
     "dailyTargets": [
       {
-        "t8E": 0,
-        "t8M": 0,
-        "t8L": 0,
-        "t13": 0,
-        "t6": 0,
-        "tImE": 0,
-        "tImL": 0
+        "t8E": 4,
+        "t8M": 2,
+        "t8L": 4,
+        "t13": 2,
+        "t6": 1,
+        "tImE": 2,
+        "tImL": 1
       },
       {
         "t8E": 0,
